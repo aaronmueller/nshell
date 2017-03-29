@@ -1,10 +1,10 @@
-#Aaron Mueller, Connor VanMeter
+# Aaron Mueller, Connor VanMeter
 # CS485G-004: Systems Programming
 # 25 March 2017
 # Project 4: A new shell
 
-CC=gcc
-CFLAGS=-Wall -g
+CC = gcc
+CFLAGS = -Wall -g
 OBJ = nsh.o
 
 %.o: %.c
@@ -12,3 +12,6 @@ OBJ = nsh.o
 
 nsh: $(OBJ)
 	gcc -o $@ $^ $(CFLAGS)
+
+clean:
+	rm -f $(OBJ)

@@ -12,9 +12,11 @@
 // POST:
 void readAndTokenize(char line[], char* tokens[]) {
 	// Read user input into `line`
+	// DANGER! DOES NOT WARN USER IF OVERFLOW -- VULNERABLE
 	fgets(line, MAXLEN, stdin);
 
 	// Tokenize input into `tokens`
+	// Rename var -- i is non-descript
 	int i = 0;
 
 	// Increment `i` until first non-space character is found
@@ -28,7 +30,8 @@ void readAndTokenize(char line[], char* tokens[]) {
 	}
 	
 	// Go through input char-by-char, tokenize by space divisions
-	// Handles multiple spaces between tokens and spaces after end of meaningful input
+	// Handles multiple spaces between tokens and spaces 
+	// after end of meaningful input
 	int was_space = 0;	// 1 if previous char was a space, 0 otherwise
 	int token_start = i;	// index in `line` of start of current token
 	int token_no = 0;	// index in `tokens` of current token
@@ -36,7 +39,7 @@ void readAndTokenize(char line[], char* tokens[]) {
 	for (; i < MAXLEN; i++) {
 		if (line[i] == ' ' && !was_space) {
 			tokens[token_no] = (char*) malloc(i - token_start + 1);
-			memcpy(tokens[token_no], (line+token_start), (i - token_start));
+			memcpy(tokens[token_no], (line + token_start), (i - token_start));
 			was_space = 1;
 			token_no++;
 		}
@@ -77,6 +80,7 @@ int main() {
 	char line[MAXLEN];
 	char* tokens[MAXTOKENS] = {"\0"};	// initialize first entry in 
 						// `tokens` to blank string
+	pid_t pid;
 	// What does this loop do?
 	while(strcmp(tokens[0], "done") != 0) {
 		printf("> ");
@@ -89,10 +93,27 @@ int main() {
 		// - if invalid, print error message to stderr
 		// - check and use parameters as appropriate
 		
-		// handle `do`; prints two command prompts and does nothing as of now
+		// Program-control Commnds
+		// SUG: Change to SWITCH statement
+		// SUG: Make statement flexible; no need for 3
+		// do
 		if (strcmp(tokens[0], "do") == 0) {
-			pid_t pid;
+			if ((pid = fork())) {
+				// parent
+				// Why is WNOHANG used here?
+				// Do we want child exit status? If yes, why NULL?
+				waitpid(pid, NULL, WNOHANG);
+			} else {
+				// child
+				if (execv(tokens[1], tokens+1)) {
+					perror(tokens[1]);
+					exit(1);
+				}
+			}
+		}
 
+		// back
+		if (strcmp(tokens[0], "back") == 0) {
 			if ((pid = fork())) {
 				// parent
 				waitpid(pid, NULL, WNOHANG);
@@ -102,8 +123,22 @@ int main() {
 					perror(tokens[1]);
 					exit(1);
 				}
-			} //esle
-		} //fi
+			} 
+		}
+
+		// tovar
+		if (strcmp(tokens[0], "tovar") == 0) {
+			if ((pid = fork())) {
+				// parent
+				waitpid(pid, NULL, WNOHANG);
+			} else {
+				// child
+				if (execv(tokens[1], tokens+1)) {
+					perror(tokens[1]);
+					exit(1);
+				}
+			}
+		}
 	} //elihw
 	return 0;
 }

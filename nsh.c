@@ -1,6 +1,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #define MAXLEN 1024		//max no. of characters from a line of user input
 #define MAXTOKENS 128	//max no. of tokens in a command
@@ -77,11 +80,28 @@ int main() {
 		// tokenize user input (by spaces) into `tokens`
 		readAndTokenize(line, tokens);
 
-		// handle command
-		//	  - check first command
-		//		# set, prompt, dir, procs, done, do, back, tobvar
-		//		# if none of the above, print error message to stderr
-		//	  - check and use parameters as appropriate
+		// handle commands
+		// - TODO: set, prompt, dir, procs, back, tobvar
+		// - if invalid, print error message to stderr
+		// - check and use parameters as appropriate
+		
+		// handle `do`; prints two command prompts and does nothing as of now
+		if (strcmp(tokens[0], "do") == 0) {
+			pid_t pid;
+
+			if ((pid=fork())) {
+				if (fork) {
+					waitpid(pid, NULL, WNOHANG);
+				} else {
+					if (execv(tokens[1], tokens+1)) {
+						perror(tokens[1]);
+					}
+				}
+			}
+
+		}
+
+
 		
 	}
 

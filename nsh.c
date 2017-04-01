@@ -71,18 +71,28 @@ void readAndTokenize(char line[], char* tokens[]) {
 	return;
 }
 
-/*
-void freeTokens(char* tokens[]) {
-
+void freeLineAndTokens(char line[], char* tokens[]) {
+	int i = 0;
+	while (line[i] != '\0') {
+		line[i] = '\0';
+		i++;
+	}
+	
+	i = 0;
+	
+	while (tokens[i] != '\0') {
+		free(tokens[i]);
+		tokens[i] = '\0';
+		i++;
+	}
 }
-*/
 
 int main() {
 	char line[MAXLEN];
 	char* tokens[MAXTOKENS] = {"\0"};	// initialize first entry in 
 										// `tokens` to blank string
 	pid_t pid;
-	while(strcmp(tokens[0], "done") != 0) {
+	do {
 		printf("> ");
 		// read user input into `line`;
 		// tokenize user input (by spaces) into `tokens`
@@ -155,7 +165,9 @@ int main() {
 		else if (strcmp(tokens[0], "procs") == 0) {
 			procs(tokens);
 		}
-	} //elihw
+
+		//freeLineAndTokens(line, tokens);
+	} while(strcmp(tokens[0], "done") != 0);
 
 	return 0;
 }

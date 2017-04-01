@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "built_in.h"
 
 #define MAXLEN 1024	//max # of chars from line of user input
 #define MAXTOKENS 128	//max # of tokens in cmd
@@ -44,7 +45,7 @@ void readAndTokenize(char line[], char* tokens[]) {
 			token_no++;
 		}
 
-		else if (line[i] == '\0' || line[i] == '\n'){
+		else if (line[i] == '\0' || line[i] == '\n' || line[i] == '%'){
 			if (!was_space) {
 				tokens[token_no] = (char*) malloc(i - token_start + 1);
 				memcpy(tokens[token_no], (line+token_start), (i - token_start));
@@ -79,9 +80,8 @@ void freeTokens(char* tokens[]) {
 int main() {
 	char line[MAXLEN];
 	char* tokens[MAXTOKENS] = {"\0"};	// initialize first entry in 
-						// `tokens` to blank string
+										// `tokens` to blank string
 	pid_t pid;
-	// What does this loop do?
 	while(strcmp(tokens[0], "done") != 0) {
 		printf("> ");
 		// read user input into `line`;
@@ -113,7 +113,7 @@ int main() {
 		}
 
 		// back
-		if (strcmp(tokens[0], "back") == 0) {
+		else if (strcmp(tokens[0], "back") == 0) {
 			if ((pid = fork())) {
 				// parent
 				waitpid(pid, NULL, WNOHANG);
@@ -127,7 +127,7 @@ int main() {
 		}
 
 		// tovar
-		if (strcmp(tokens[0], "tovar") == 0) {
+		else if (strcmp(tokens[0], "tovar") == 0) {
 			if ((pid = fork())) {
 				// parent
 				waitpid(pid, NULL, WNOHANG);
@@ -139,6 +139,23 @@ int main() {
 				}
 			}
 		}
+
+		else if (strcmp(tokens[0], "set") == 0) {
+			set(tokens);
+		}
+
+		else if (strcmp(tokens[0], "prompt") == 0) {
+			prompt(tokens);
+		}
+
+		else if (strcmp(tokens[0], "dir") == 0) {
+			dir(tokens);
+		}
+
+		else if (strcmp(tokens[0], "procs") == 0) {
+			procs(tokens);
+		}
 	} //elihw
+
 	return 0;
 }

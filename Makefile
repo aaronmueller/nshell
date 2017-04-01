@@ -5,7 +5,7 @@
 
 CC = gcc
 CFLAGS = -Wall -g
-OBJ = nsh.o
+OBJ = nsh.o built_in.o
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)

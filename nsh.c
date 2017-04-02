@@ -124,15 +124,15 @@ int main() {
 
 		// back
 		else if (strcmp(tokens[0], "back") == 0) {
-			if ((pid = fork())) {
-				// parent
-				waitpid(pid, NULL, WNOHANG);
-			} else {
+			if (!(pid = fork())) {
 				// child
 				if (execv(tokens[1], tokens+1)) {
 					perror(tokens[1]);
 					exit(1);
 				}
+			} else {
+				// parent
+				waitpid(pid, NULL, WNOHANG);
 			} 
 		}
 

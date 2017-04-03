@@ -91,7 +91,7 @@ int varIndex(char* token) {
 }
 
 // set variable value
-void set(char* tokens[]) {
+void set(char** tokens) {
 	// Check for proper format
 	if ( !tokens[0] || !tokens[1]) {
 		fprintf(stderr, "usage: set <variable> <value>\n");
@@ -125,6 +125,11 @@ void set(char* tokens[]) {
 	}
 	// Set var name and value
 	strcpy(usrVarName[index], tokens[0]);
+	if (index == 0) {
+		if (tokens[1][strlen(tokens[1]) - 1] != '/') {
+			strcat(tokens[1], "/");
+		}
+	}
 	strcpy(usrVarValue[index], tokens[1]);
 	
 	// Display results of set
@@ -137,29 +142,32 @@ void displayShellVariables(){
 		printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
-void doCmd(char* tokens[]) {
+void doCmd(char** tokens) {
 	pid_t pid;
-	char* buf;
+	char* buf = malloc(MAXTOKENLEN*2 * sizeof(char));
+	strncpy(buf, usrVarValue[0], MAXTOKENLEN);
+	strncat(buf, tokens[1], MAXTOKENLEN);
+	printf("%s\n", buf);
 
 	if ((pid = fork())) {
 		// parent
 		waitpid(pid, NULL, WNOHANG);
 	} else {
 		// child
-		if (tokens[0][0] == '/') {
-			if (execv(tokens[0], tokens+1)) {
-				perror(tokens[0]);
+		if (tokens[1][0] == '/') {
+			if (execv(tokens[1], tokens+1)) {
+				perror(tokens[1]);
 				exit(1);
 			}
 		}
-		else if (tokens[0][0] == '.' && tokens[0][1] == '/') {	
-			if (execve(tokens[0], tokens+1, getcwd(buf, 100))) {
-				perror(tokens[0]);
+		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {	
+			if (execve(tokens[1], tokens+1, getcwd(buf, 100))) {
+				perror(tokens[1]);
 				exit(1);
 			}
 		}
-		else if (execve(tokens[0], tokens+1, usrVarValue[0])) {
-			perror(tokens[0]);
+		else if (execv(buf, tokens+1)) {
+			perror(tokens[1]);
 			exit(1);
 		}
 	}
@@ -183,7 +191,7 @@ int main() {
 	}
 	// set default PATH @ index 0
 	strcpy(usrVarName[sizeVar], "PATH");
-	strcpy(usrVarValue[sizeVar], "/bin:/usr/bin");
+	strcpy(usrVarValue[sizeVar], "/bin/");
 	sizeVar++;
 	// set ShowTokens to 0 @ index 1
 	strcpy(usrVarName[sizeVar],"ShowTokens");
@@ -216,7 +224,9 @@ int main() {
 			}
 
 			// do
-			if (strcmp(tokens[0], "do") == 0) doCmd(tokens+1);
+			if (strcmp(tokens[0], "do") == 0) {
+				doCmd(tokens);
+			}
 
 			// back
 			else if (strcmp(tokens[0], "back") == 0) {

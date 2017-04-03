@@ -10,12 +10,14 @@
 #define MAXLEN 1024	// max # of chars from line of user input (flexible)
 #define MAXTOKENS 128	// max # of tokens in cmd (flexible)
 #define MAXPROMPT 256	// max length of prompt
-#define MAXTOKENLEN 32	// max length of tokens (flexible)
+#define MAXTOKENLEN 256	// max length of tokens 
+#define MAXPROCS 128
 
 int usrVarSize = 10;	// defult size of usr var array (flexible)
 char **usrVarName;
 char **usrVarValue;
 int sizeVar = 0; 	// index of last set variable value
+int *processes;
 
 char* read_line() {
 	int pos = 0;
@@ -31,7 +33,11 @@ char* read_line() {
 
 	while(1) {
 		c = getchar();
-		if (c == EOF || c == '\n') {
+		if (c == '\377') {
+			strcpy(buf, "done\n");
+			return buf;
+		}
+		else if (c == '\n') {
 			buf[pos] = '\0';
 			return buf;
 		}
@@ -171,7 +177,7 @@ void doCmd(char** tokens, int background) {
 		if (tokens[1][0] == '/') {
 			if (execv(tokens[1], tokens+1)) {
 				perror(tokens[1]);
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 		}
 		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {
@@ -179,12 +185,12 @@ void doCmd(char** tokens, int background) {
 			buf = malloc(MAXTOKENLEN * sizeof(char));
 			if (execve(tokens[1], tokens+1, getcwd(buf, MAXTOKENLEN))) {
 				perror(tokens[1]);
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 		}
 		else if (execv(buf, tokens+1)) {
 			perror(tokens[1]);
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 	}
 

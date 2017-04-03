@@ -1,4 +1,5 @@
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -6,9 +7,15 @@
 #include <sys/wait.h>
 #include "built_in.h"
 
-#define MAXLEN 1024		//max # of chars from line of user input (flexible)
-#define MAXTOKENS 128	//max # of tokens in cmd (flexible)
-#define MAXPROMPT 256	//max length of prompt
+#define MAXLEN 1024	// max # of chars from line of user input (flexible)
+#define MAXTOKENS 128	// max # of tokens in cmd (flexible)
+#define MAXPROMPT 256	// max length of prompt
+#define MAXTOKENLEN 32	// max length of tokens (flexible)
+
+int usrVarSize = 10;	// defult size of usr var array (flexible)
+char **usrVarName;
+char **usrVarValue;
+int lastVar = 0; 	// index of last set variable value
 
 char* read_line() {
 	int pos = 0;
@@ -75,13 +82,47 @@ char** tokenize(char* line) {
 	return tokens;
 }
 
+int varIndex(char* token) {
+	int i;
+	for (i = 0; i < lastVar; ++i) {
+		if (strcmp(token, usrVarName[i]) == 0)
+			return i;
+	};
+	return -1;
+}
+
+// set variable value
+void set(char* tokens[]) {
+	// need to check for token #
+	if ( !isalpha(tokens[0][1]) ) {
+		perror("variable starts with a non-alphabet character");
+		return;
+	}
+	usrVarName[lastVar] = tokens[0];
+	usrVarValue[lastVar] = tokens[1];
+	lastVar++;
+}
+
 int main() {
 	char* user_prompt = malloc(MAXPROMPT);
+ 	usrVarName = malloc(usrVarSize * MAXTOKENLEN);
+	usrVarValue = malloc(usrVarSize * MAXTOKENLEN);
 	strncpy(user_prompt, "nsh > ", MAXPROMPT);
 	char* line;
 	char** tokens;	
-	
 	pid_t pid = 0;
+	int i;
+
+	// allocate usr variables
+	for (i = 0; i < usrVarSize; ++i) {
+		usrVarName[i] = (char*)malloc(MAXTOKENLEN+1);
+		usrVarValue[i] = (char*)malloc(MAXTOKENLEN+1);
+	}
+	// set default PATH @ index 0
+	usrVarName[lastVar] = "PATH";
+	usrVarValue[lastVar] = "/bin:/usr/bin";
+	lastVar++;
+
 	while(1) {
 		printf("%s", user_prompt);
 		// read user input into `line`;

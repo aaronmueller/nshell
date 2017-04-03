@@ -1,8 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
 
-void set(char* tokens[]) {}
-
 // use `chdir()` to change directory; handle errors here
 void dir(char* tokens[]) {
 	// if no argument, print error message to stderr

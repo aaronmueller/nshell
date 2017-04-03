@@ -142,16 +142,25 @@ void displayShellVariables(){
 		printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
-void doCmd(char** tokens) {
+void doCmd(char** tokens, int background) {
 	pid_t pid;
+	int wait_behavior;
 	char* buf = malloc(MAXTOKENLEN*2 * sizeof(char));
 	strncpy(buf, usrVarValue[0], MAXTOKENLEN);
 	strncat(buf, tokens[1], MAXTOKENLEN);
 	printf("%s\n", buf);
 
+
+	if (background) {
+		wait_behavior = WNOHANG;	// run process in background
+	} else {
+		wait_behavior = 0;	// wait until child is finished
+	}
+
 	if ((pid = fork())) {
 		// parent
-		waitpid(pid, NULL, WNOHANG);
+		int status;
+		waitpid(pid, &status, wait_behavior);
 	} else {
 		// child
 		if (tokens[1][0] == '/') {
@@ -160,8 +169,10 @@ void doCmd(char** tokens) {
 				exit(1);
 			}
 		}
-		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {	
-			if (execve(tokens[1], tokens+1, getcwd(buf, 100))) {
+		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {
+			free(buf);
+			buf = malloc(MAXTOKENLEN * sizeof(char));
+			if (execve(tokens[1], tokens+1, getcwd(buf, MAXTOKENLEN))) {
 				perror(tokens[1]);
 				exit(1);
 			}
@@ -225,11 +236,13 @@ int main() {
 
 			// do
 			if (strcmp(tokens[0], "do") == 0) {
-				doCmd(tokens);
+				doCmd(tokens, 0);
 			}
 
 			// back
 			else if (strcmp(tokens[0], "back") == 0) {
+				doCmd(tokens, 1);
+				/*
 				if (!(pid = fork())) {
 					// child
 					if (execv(tokens[1], tokens+1)) {
@@ -240,6 +253,7 @@ int main() {
 					// parent
 					waitpid(pid, NULL, WNOHANG);
 				} 
+				*/
 			}
 
 			// tovar

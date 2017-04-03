@@ -15,7 +15,7 @@
 int usrVarSize = 10;	// defult size of usr var array (flexible)
 char **usrVarName;
 char **usrVarValue;
-int lastVar = 0; 	// index of last set variable value
+int sizeVar = 0; 	// index of last set variable value
 
 char* read_line() {
 	int pos = 0;
@@ -84,7 +84,7 @@ char** tokenize(char* line) {
 
 int varIndex(char* token) {
 	int i;
-	for (i = 0; i < lastVar; ++i) {
+	for (i = 0; i < sizeVar; ++i) {
 		if (strcmp(token, usrVarName[i]) == 0)
 			return i;
 	};
@@ -93,14 +93,20 @@ int varIndex(char* token) {
 
 // set variable value
 void set(char* tokens[]) {
-	// need to check for token #
+	// Check is token starts with a non-alphabet character
 	if ( !isalpha(tokens[0][1]) ) {
 		perror("variable starts with a non-alphabet character");
 		return;
 	}
-	usrVarName[lastVar] = tokens[0];
-	usrVarValue[lastVar] = tokens[1];
-	lastVar++;
+	// Check if more space is needed
+	if (usrVarSize < sizeVar) {
+		usrVarSize += 10;
+		usrVarName = realloc(usrVarName, usrVarSize * MAXTOKENLEN);
+		usrVarValue = realloc(usrVarValue, usrVarSize * MAXTOKENLEN);	
+	}
+	usrVarName[sizeVar] = tokens[0];
+	usrVarValue[sizeVar] = tokens[1];
+	sizeVar++;
 }
 
 int main() {
@@ -119,9 +125,9 @@ int main() {
 		usrVarValue[i] = (char*)malloc(MAXTOKENLEN+1);
 	}
 	// set default PATH @ index 0
-	usrVarName[lastVar] = "PATH";
-	usrVarValue[lastVar] = "/bin:/usr/bin";
-	lastVar++;
+	usrVarName[sizeVar] = "PATH";
+	usrVarValue[sizeVar] = "/bin:/usr/bin";
+	sizeVar++;
 
 	while(1) {
 		printf("%s", user_prompt);

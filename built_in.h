@@ -3,7 +3,7 @@
 
 void set(char* tokens[]);
 
-void prompt(char* tokens[]);
+void prompt(char* tokens[], char** user_prompt);
 
 void dir(char* tokens[]);
 

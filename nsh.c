@@ -74,82 +74,22 @@ char** tokenize(char* line) {
 	return tokens;
 }
 
-void perform_commands(char** tokens, pid_t pid) {
-	// do
-	if (strcmp(tokens[0], "do") == 0) {
-		if ((pid = fork())) {
-			// parent
-			// Why is WNOHANG used here?
-			// Do we want child exit status? If yes, why NULL?
-			waitpid(pid, NULL, WNOHANG);
-		} else {
-			// child
-			if (execv(tokens[1], tokens+1)) {
-				perror(tokens[1]);
-				exit(1);
-			}
-		}
-	}
-
-	// back
-	else if (strcmp(tokens[0], "back") == 0) {
-		if (!(pid = fork())) {
-			// child
-			if (execv(tokens[1], tokens+1)) {
-				perror(tokens[1]);
-				exit(1);
-			}
-		} else {
-			// parent
-			waitpid(pid, NULL, WNOHANG);
-		} 
-	}
-
-	// tovar
-	else if (strcmp(tokens[0], "tovar") == 0) {
-		if ((pid = fork())) {
-			// parent
-			waitpid(pid, NULL, WNOHANG);
-		} else {
-			// child
-			if (execv(tokens[1], tokens+1)) {
-				perror(tokens[1]);
-				exit(1);
-			}
-		}
-	}
-
-	else if (strcmp(tokens[0], "set") == 0) {
-		set(tokens);
-	}
-
-	else if (strcmp(tokens[0], "prompt") == 0) {
-		prompt(tokens);
-	}
-
-	else if (strcmp(tokens[0], "dir") == 0) {
-		dir(tokens);
-	}
-
-	else if (strcmp(tokens[0], "procs") == 0) {
-		procs(tokens);
-	}
-}
-
 int main() {
+	char* user_prompt = "nsh > ";
 	char* line;
 	char** tokens;	// initialize first entry in 
 					// `tokens` to blank string
+	
 	pid_t pid = 0;
 	while(1) {
-		printf("> ");
+		printf("%s", user_prompt);
 		// read user input into `line`;
 		// tokenize user input (by spaces) into `tokens`
 		line = read_line();
 		tokens = tokenize(line);
 
 		// handle commands
-		// - TODO: set, prompt, dir, procs, back, tobvar
+		// - TODO: set, prompt, procs, back, tovar
 		// - if invalid, print error message to stderr
 		// - check and use parameters as appropriate
 		
@@ -161,15 +101,78 @@ int main() {
 			if (strcmp(tokens[0], "done") == 0) {
 				break;
 			}
+	
+			// do
+			if (strcmp(tokens[0], "do") == 0) {
+				if ((pid = fork())) {
+					// parent
+					// Why is WNOHANG used here?
+					// Do we want child exit status? If yes, why NULL?
+					waitpid(pid, NULL, WNOHANG);
+				} else {
+					// child
+					if (execv(tokens[1], tokens+1)) {
+						perror(tokens[1]);
+						exit(1);
+					}
+				}
+			}
 
-			perform_commands(tokens, pid);
+			// back
+			else if (strcmp(tokens[0], "back") == 0) {
+				if (!(pid = fork())) {
+					// child
+					if (execv(tokens[1], tokens+1)) {
+						perror(tokens[1]);
+						exit(1);
+					}
+				} else {
+					// parent
+					waitpid(pid, NULL, WNOHANG);
+				} 
+			}
+
+			// tovar
+			else if (strcmp(tokens[0], "tovar") == 0) {
+				if ((pid = fork())) {
+					// parent
+					waitpid(pid, NULL, WNOHANG);
+				} else {
+					// child
+					if (execv(tokens[1], tokens+1)) {
+						perror(tokens[1]);
+						exit(1);
+					}
+				}
+			}
+
+			else if (strcmp(tokens[0], "set") == 0) {
+				set(tokens);
+			}
+
+			else if (strcmp(tokens[0], "prompt") == 0) {
+				prompt(tokens, &user_prompt);
+			}
+
+			else if (strcmp(tokens[0], "dir") == 0) {
+				dir(tokens);
+			}
+
+			else if (strcmp(tokens[0], "procs") == 0) {
+				procs(tokens);
+			}
+			
+			else {
+				fprintf(stderr, "invalid command: %s\n", tokens[0]);
+			}
+
 			free(line);
 			free(tokens);
 		} else {
 			continue;
 		}
 		
-			} 
+	} 
 
 	return 0;
 }

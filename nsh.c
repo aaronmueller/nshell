@@ -156,6 +156,10 @@ int main() {
 					fprintf(stderr, "\'prompt\' usage: prompt <new_prompt>\n");
 				}
 				else {
+					if (strlen(tokens[1]) > 255) {
+						fprintf(stderr, 
+								"warning: prompt too long. truncating to 256 characters.\n");
+					}
 					strncpy(user_prompt, tokens[1], MAXPROMPT);
 				}
 			}

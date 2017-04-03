@@ -8,6 +8,7 @@
 
 #define MAXLEN 1024		//max # of chars from line of user input (flexible)
 #define MAXTOKENS 128	//max # of tokens in cmd (flexible)
+#define MAXPROMPT 256	//max length of prompt
 
 char* read_line() {
 	int pos = 0;
@@ -75,10 +76,10 @@ char** tokenize(char* line) {
 }
 
 int main() {
-	char* user_prompt = "nsh > ";
+	char* user_prompt = malloc(MAXPROMPT);
+	strncpy(user_prompt, "nsh > ", MAXPROMPT);
 	char* line;
-	char** tokens;	// initialize first entry in 
-					// `tokens` to blank string
+	char** tokens;	
 	
 	pid_t pid = 0;
 	while(1) {
@@ -151,7 +152,12 @@ int main() {
 			}
 
 			else if (strcmp(tokens[0], "prompt") == 0) {
-				prompt(tokens, &user_prompt);
+				if (!tokens[1]) {
+					fprintf(stderr, "\'prompt\' usage: prompt <new_prompt>\n");
+				}
+				else {
+					strncpy(user_prompt, tokens[1], MAXPROMPT);
+				}
 			}
 
 			else if (strcmp(tokens[0], "dir") == 0) {

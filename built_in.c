@@ -3,15 +3,6 @@
 
 void set(char* tokens[]) {}
 
-void prompt(char* tokens[], char** user_prompt) {
-	if (!tokens[1]) {
-		fprintf(stderr, "\'prompt\' usage: prompt <new_prompt>\n");
-		return;
-	}
-
-	*user_prompt = tokens[1];
-}
-
 // use `chdir()` to change directory; handle errors here
 void dir(char* tokens[]) {
 	// if no argument, print error message to stderr

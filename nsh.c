@@ -118,17 +118,17 @@ void set(char* tokens[]) {
 		tokens[0][MAXTOKENLEN-1] = '\0';
 	if (sizeof(tokens[1]) > MAXTOKENLEN)
 		tokens[1][MAXTOKENLEN-1] = '\0';
-	// Set var name and var value
-	strcpy(usrVarName[sizeVar], tokens[0]);
-	strcpy(usrVarValue[sizeVar], tokens[1]);
 	// Increment size if var name is new
 	if (index == -1) {
 		index = sizeVar;
 		sizeVar++;
 	}
+	// Set var name and value
+	strcpy(usrVarName[index], tokens[0]);
+	strcpy(usrVarValue[index], tokens[1]);
 	
 	// Display results of set
-	printf("%d: %s = %s\n", index, tokens[0], tokens[1]);
+	printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
 void displayShellVariables(){
@@ -153,11 +153,12 @@ int main() {
 		usrVarValue[i] = (char*)malloc(MAXTOKENLEN+1);
 	}
 	// set default PATH @ index 0
-	usrVarName[sizeVar] = "PATH";
-	usrVarValue[sizeVar] = "/bin:/usr/bin";
+	strcpy(usrVarName[sizeVar], "PATH");
+	strcpy(usrVarValue[sizeVar], "/bin:/usr/bin");
 	sizeVar++;
-	usrVarName[sizeVar] = "ShowTokens";
-	usrVarValue[sizeVar] = "0";
+	// set ShowTokens to 0 @ index 1
+	strcpy(usrVarName[sizeVar],"ShowTokens");
+	strcpy(usrVarValue[sizeVar], "0");
 	sizeVar++;
 
 	while(1) {
@@ -176,20 +177,18 @@ int main() {
 		// Program-control Commnds
 		
 		if (*tokens) {
-			if (strcmp(usrVarValue[1], "1") == 0) {
-				i = 0;
-				printf("tokens: ");
-				while (tokens[i]) {
-					printf("%s,", tokens[i]);
-					i++;
-				}
-				printf("\n");
-			}
-
 			if (strcmp(tokens[0], "done") == 0) {
 				break;
 			}
-	
+			
+			if (strcmp(usrVarValue[1], "1") == 0) {
+				i = 0;
+				while (tokens[i]) {
+					printf("Token = %s\n", tokens[i]);
+					i++;
+				}
+			}
+
 			// do
 			if (strcmp(tokens[0], "do") == 0) {
 				if ((pid = fork())) {

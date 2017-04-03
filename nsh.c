@@ -119,11 +119,22 @@ void set(char* tokens[]) {
 	if (sizeof(tokens[1]) > MAXTOKENLEN)
 		tokens[1][MAXTOKENLEN-1] = '\0';
 	// Set var name and var value
-	usrVarName[sizeVar] = tokens[0];
-	usrVarValue[sizeVar] = tokens[1];
+	strcpy(usrVarName[sizeVar], tokens[0]);
+	strcpy(usrVarValue[sizeVar], tokens[1]);
 	// Increment size if var name is new
-	if (index == -1)
+	if (index == -1) {
+		index = sizeVar;
 		sizeVar++;
+	}
+	
+	// Display results of set
+	printf("%d: %s = %s\n", index, tokens[0], tokens[1]);
+}
+
+void displayShellVariables(){
+	int index;
+	for (index = 0; index < sizeVar; ++index)
+		printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
 int main() {
@@ -264,6 +275,10 @@ int main() {
 			else if (strcmp(tokens[0], "pwd") == 0) {
 				getcwd(line, 100);
 				printf("%s \n", line);
+			}
+
+			else if (strcmp(tokens[0], "dshv") == 0) {
+				displayShellVariables();
 			}
 	
 			else {

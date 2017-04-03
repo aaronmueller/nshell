@@ -1,10 +1,26 @@
-# zsh-P4
+# nsh-P4
 CS485G: Shell Project
+Authors: Aaron Mueller, Connor VanMeter
 
-# TODO
-* read first token
-	- need to be implemented: set, prompt, dir, procs, back, tobvar
-	- started: do
-	- completed: done
-	- if none of the above commands, print error message to stderr
-* if applicable, read arguments and parameters and act appropriately
+# ABOUT
+
+# COMMANDS
+* The nsh shell has the following commands:
+* Built-in Commands
+	- set variable value
+	- prompt newPrompt
+	- dir directoryName
+	- procs
+	- done
+	- pwd (print working directory)
+	- dshv (display shell variable)
+* Built-in Commands ignore additional tokens.
+* Program Commands
+	- do
+	- back
+	- tovar
+* If none of the above commands are given, an error message is displayed.
+
+# OTHER FEATURES
+* Shell Variables have split storage. Name are stored in usrVarName. Value are stored in usrVarValue.
+* Index 0 is reserved for PATH. Index 1 is reserved for ShowTokens.

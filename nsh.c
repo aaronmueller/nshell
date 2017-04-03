@@ -150,6 +150,7 @@ int main() {
 	sizeVar++;
 
 	while(1) {
+		char *env[] = {usrVarValue[0], getcwd(line, 100), (char *)0};
 		printf("%s", user_prompt);
 		// read user input into `line`;
 		// tokenize user input (by spaces) into `tokens`
@@ -185,7 +186,7 @@ int main() {
 					waitpid(pid, NULL, WNOHANG);
 				} else {
 					// child
-					if (execv(tokens[1], tokens+1)) {
+					if (execve(tokens[1], tokens+1, env)) {
 						perror(tokens[1]);
 						exit(1);
 					}
@@ -208,11 +209,26 @@ int main() {
 
 			// tovar
 			else if (strcmp(tokens[0], "tovar") == 0) {
-				if ((pid = fork())) {
-					// parent
+				int pipefd[2];
+				char buf;
+				if (pipe(pipefd) == -1) {
+					perror("Problem with pipe.");
+					exit(EXIT_FAILURE);
+				}
+				pid = fork();
+				if (pid == -1){
+					perror("Problem with fork.");
+					exit(EXIT_FAILURE);
+				}
+				if (pid != 0) {
+					// parent reads from pipe
+					close(pipefd[1]); //close unused write
 					waitpid(pid, NULL, WNOHANG);
+					set(read(pipefd[0], &buf, 1));
 				} else {
-					// child
+					// child writes to pipe
+					close(pipefd[0]); //close unused read
+					dup2(pipefd[1],STDOUT_FILENO);
 					if (execv(tokens[1], tokens+1)) {
 						perror(tokens[1]);
 						exit(1);
@@ -244,7 +260,12 @@ int main() {
 			else if (strcmp(tokens[0], "procs") == 0) {
 				procs();
 			}
-			
+		
+			else if (strcmp(tokens[0], "pwd") == 0) {
+				getcwd(line, 100);
+				printf("%s \n", line);
+			}
+	
 			else {
 				fprintf(stderr, "invalid command: %s\n", tokens[0]);
 			}

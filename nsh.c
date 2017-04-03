@@ -86,7 +86,7 @@ int varIndex(char* token) {
 	for (i = 0; i < sizeVar; ++i) {
 		if (strcmp(token, usrVarName[i]) == 0)
 			return i;
-	};
+	}
 	return -1;
 }
 
@@ -94,21 +94,23 @@ int varIndex(char* token) {
 void set(char* tokens[]) {
 	// Check for proper format
 	if ( !tokens[0] || !tokens[1]) {
-		perror("usuage: set variable value");
+		fprintf(stderr, "usage: set <variable> <value>\n");
 		return;
+	}
 
-	}
-	// Check is token starts with a non-alphabet character
+	// Check if token starts with a non-alphabet character
 	if ( !isalpha(tokens[0][0]) ) {
-		perror("variable starts with a non-alphabet character");
+		fprintf(stderr, "variable must start with an alphabet character");
 		return;
 	}
+
 	// Check if more space is needed
 	if (usrVarSize < sizeVar) {
 		usrVarSize += 10;
 		usrVarName = realloc(usrVarName, usrVarSize * MAXTOKENLEN);
 		usrVarValue = realloc(usrVarValue, usrVarSize * MAXTOKENLEN);	
 	}
+
 	// Find index of var name (if it exists)
 	int index = varIndex(tokens[0]);
 	// Truncate var name/value if > MAXTOKENLEN
@@ -143,6 +145,9 @@ int main() {
 	usrVarName[sizeVar] = "PATH";
 	usrVarValue[sizeVar] = "/bin:/usr/bin";
 	sizeVar++;
+	usrVarName[sizeVar] = "ShowTokens";
+	usrVarValue[sizeVar] = "0";
+	sizeVar++;
 
 	while(1) {
 		printf("%s", user_prompt);
@@ -159,6 +164,16 @@ int main() {
 		// Program-control Commnds
 		
 		if (*tokens) {
+			if (strcmp(usrVarValue[1], "1") == 0) {
+				i = 0;
+				printf("tokens: ");
+				while (tokens[i]) {
+					printf("%s,", tokens[i]);
+					i++;
+				}
+				printf("\n");
+			}
+
 			if (strcmp(tokens[0], "done") == 0) {
 				break;
 			}

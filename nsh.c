@@ -137,6 +137,35 @@ void displayShellVariables(){
 		printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
+void doCmd(char* tokens[]) {
+	pid_t pid;
+	char* buf;
+
+	if ((pid = fork())) {
+		// parent
+		waitpid(pid, NULL, WNOHANG);
+	} else {
+		// child
+		if (tokens[0][0] == '/') {
+			if (execv(tokens[0], tokens+1)) {
+				perror(tokens[0]);
+				exit(1);
+			}
+		}
+		else if (tokens[0][0] == '.' && tokens[0][1] == '/') {	
+			if (execve(tokens[0], tokens+1, getcwd(buf, 100))) {
+				perror(tokens[0]);
+				exit(1);
+			}
+		}
+		else if (execve(tokens[0], tokens+1, usrVarValue[0])) {
+			perror(tokens[0]);
+			exit(1);
+		}
+	}
+
+}
+
 int main() {
 	char* user_prompt = malloc(MAXPROMPT);
  	usrVarName = malloc(usrVarSize * MAXTOKENLEN);
@@ -162,7 +191,6 @@ int main() {
 	sizeVar++;
 
 	while(1) {
-		char *env[] = {usrVarValue[0], getcwd(line, 100), (char *)0};
 		printf("%s", user_prompt);
 		// read user input into `line`;
 		// tokenize user input (by spaces) into `tokens`
@@ -170,11 +198,9 @@ int main() {
 		tokens = tokenize(line);
 
 		// handle commands
-		// - TODO: set, procs
+		// - TODO: procs
 		// - if invalid, print error message to stderr
 		// - check and use parameters as appropriate
-		
-		// Program-control Commnds
 		
 		if (*tokens) {
 			if (strcmp(tokens[0], "done") == 0) {
@@ -190,18 +216,7 @@ int main() {
 			}
 
 			// do
-			if (strcmp(tokens[0], "do") == 0) {
-				if ((pid = fork())) {
-					// parent
-					waitpid(pid, NULL, WNOHANG);
-				} else {
-					// child
-					if (execve(tokens[1], tokens+1, env)) {
-						perror(tokens[1]);
-						exit(1);
-					}
-				}
-			}
+			if (strcmp(tokens[0], "do") == 0) doCmd(tokens+1);
 
 			// back
 			else if (strcmp(tokens[0], "back") == 0) {

@@ -19,6 +19,7 @@ int sizeVar = 0; 	// index of last set variable value
 
 char* read_line() {
 	int pos = 0;
+	int skip = 0;
 	int size = MAXLEN;
 	char *buf = malloc(size * sizeof(char));
 	char c;
@@ -30,11 +31,15 @@ char* read_line() {
 
 	while(1) {
 		c = getchar();
-		if (c == EOF || c == '\n' || c == '%') {
+		if (c == EOF || c == '\n') {
 			buf[pos] = '\0';
 			return buf;
 		}
-		else {
+		else if(c == '%'){
+			buf[pos] = '\0';
+			skip = 1;
+		}
+		else if (!skip) {
 			buf[pos] = c;
 		}
 		pos++;

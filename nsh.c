@@ -55,7 +55,6 @@ char** tokenize(char* line) {
 	int pos = 0;
 	char** tokens = malloc(MAXTOKENS * sizeof(char*));
 	char* token;
-
 	if (!tokens) {
 		fprintf(stderr, "nsh: allocation error\n");
 		exit(EXIT_FAILURE);
@@ -93,6 +92,12 @@ int varIndex(char* token) {
 
 // set variable value
 void set(char* tokens[]) {
+	// Check for proper format
+	if ( !tokens[0] || !tokens[1]) {
+		perror("usuage: set variable value");
+		return;
+
+	}
 	// Check is token starts with a non-alphabet character
 	if ( !isalpha(tokens[0][0]) ) {
 		perror("variable starts with a non-alphabet character");
@@ -104,9 +109,19 @@ void set(char* tokens[]) {
 		usrVarName = realloc(usrVarName, usrVarSize * MAXTOKENLEN);
 		usrVarValue = realloc(usrVarValue, usrVarSize * MAXTOKENLEN);	
 	}
+	// Find index of var name (if it exists)
+	int index = varIndex(tokens[0]);
+	// Truncate var name/value if > MAXTOKENLEN
+	if (sizeof(tokens[0]) > MAXTOKENLEN)
+		tokens[0][MAXTOKENLEN-1] = '\0';
+	if (sizeof(tokens[1]) > MAXTOKENLEN)
+		tokens[1][MAXTOKENLEN-1] = '\0';
+	// Set var name and var value
 	usrVarName[sizeVar] = tokens[0];
 	usrVarValue[sizeVar] = tokens[1];
-	sizeVar++;
+	// Increment size if var name is new
+	if (index == -1)
+		sizeVar++;
 }
 
 int main() {

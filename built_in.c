@@ -18,4 +18,4 @@ void dir(char* tokens[]) {
 	return;
 }
 
-void procs(char* tokens[]) {}
+void procs() {}

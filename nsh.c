@@ -90,13 +90,11 @@ int main() {
 		tokens = tokenize(line);
 
 		// handle commands
-		// - TODO: set, prompt, procs, back, tovar
+		// - TODO: set, procs
 		// - if invalid, print error message to stderr
 		// - check and use parameters as appropriate
 		
 		// Program-control Commnds
-		// SUG: Change to SWITCH statement
-		// SUG: Make statement flexible; no need for 3
 		
 		if (*tokens) {
 			if (strcmp(tokens[0], "done") == 0) {
@@ -107,8 +105,6 @@ int main() {
 			if (strcmp(tokens[0], "do") == 0) {
 				if ((pid = fork())) {
 					// parent
-					// Why is WNOHANG used here?
-					// Do we want child exit status? If yes, why NULL?
 					waitpid(pid, NULL, WNOHANG);
 				} else {
 					// child
@@ -169,7 +165,7 @@ int main() {
 			}
 
 			else if (strcmp(tokens[0], "procs") == 0) {
-				procs(tokens);
+				procs();
 			}
 			
 			else {

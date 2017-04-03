@@ -94,7 +94,7 @@ int varIndex(char* token) {
 // set variable value
 void set(char* tokens[]) {
 	// Check is token starts with a non-alphabet character
-	if ( !isalpha(tokens[0][1]) ) {
+	if ( !isalpha(tokens[0][0]) ) {
 		perror("variable starts with a non-alphabet character");
 		return;
 	}
@@ -191,7 +191,7 @@ int main() {
 			}
 
 			else if (strcmp(tokens[0], "set") == 0) {
-				set(tokens);
+				set(tokens+1);
 			}
 
 			else if (strcmp(tokens[0], "prompt") == 0) {

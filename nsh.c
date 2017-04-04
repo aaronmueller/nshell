@@ -253,7 +253,6 @@ void doCmd(char** tokens, int type) {
 			int path_worked = 0;
 			char* path;
 			path = strtok(usrVarValue[0], ":");
-			printf("path: %s", path);
 			// loop through all paths, separated by colons
 			while (path != NULL) {
 				strcpy(buf, path);
@@ -262,12 +261,9 @@ void doCmd(char** tokens, int type) {
 					strcat(buf, "/");
 				}
 				strcat(buf, tokens[0]);
-				if (execv(buf, tokens)) {
-					perror(tokens[0]);
-					exit(EXIT_FAILURE);
-				} else {
+				if (!execv(buf, tokens)) {
 					path_worked = 1;
-					//break;
+					break;
 				}
 
 				path = strtok(NULL, ":");
@@ -275,6 +271,7 @@ void doCmd(char** tokens, int type) {
 
 			if (!path_worked) {
 				perror(tokens[0]);
+				exit(EXIT_FAILURE);
 			}
 
 			free(path);

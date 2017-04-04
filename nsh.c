@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include "built_in.h"
 
 #define MAXLEN 1024	// max # of chars from line of user input (flexible)
 #define MAXTOKENS 128	// max # of tokens in cmd (flexible)
@@ -356,7 +355,15 @@ int main() {
 
 			// dir
 			else if (strcmp(tokens[0], "dir") == 0) {
-				dir(tokens);
+				// if no argument, print error message to stderr
+				if (!tokens[1]) {
+					fprintf(stderr, "\'dir\' usage: dir <directory>\n");
+				}
+				
+				// if chdir does not return 0, print error message using perror()
+				else if (chdir(tokens[1]) != 0) {
+					perror(tokens[1]);
+				}
 			}
 
 			// procs

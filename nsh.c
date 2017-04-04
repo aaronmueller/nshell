@@ -156,12 +156,6 @@ void set(char** tokens) {
 
 	// Set var name and value
 	strcpy(usrVarName[index], tokens[0]);
-	if (index == 0) {
-		if (tokens[1][strlen(tokens[1]) - 1] != '/') {
-			strcat(tokens[1], "/");
-		}
-	}
-
 	strcpy(usrVarValue[index], tokens[1]);
 	
 	// Display results of set
@@ -245,12 +239,34 @@ void doCmd(char** tokens, int type) {
 			}
 		}
 		else {
-			strcpy(buf, usrVarValue[0]);
-			strcat(buf, tokens[0]);
-			if (execv(buf, tokens)) {
-				perror(tokens[0]);
-				exit(EXIT_FAILURE);
+			int path_worked = 0;
+			char* path;
+			path = strtok(usrVarValue[0], ":");
+
+			// loop through all paths, separated by colons
+			while (path != NULL) {
+				strcpy(buf, path);
+				// append path-final '/' if not already existent
+				if (path[strlen(path) - 1] != '/') {
+					strcat(buf, "/");
+				}
+				strcat(buf, tokens[0]);
+				if (execv(buf, tokens)) {
+					//perror(tokens[0]);
+					//exit(EXIT_FAILURE);
+				} else {
+					path_worked = 1;
+					//break;
+				}
+
+				path = strtok(NULL, ":");
 			}
+
+			if (!path_worked) {
+				perror(tokens[0]);
+			}
+
+			free(path);
 		} // else
 	} // else
 } // doCmd
@@ -273,7 +289,7 @@ int main() {
 	}
 	// set default PATH @ index 0
 	strcpy(usrVarName[sizeVar], "PATH");
-	strcpy(usrVarValue[sizeVar], "/bin/");
+	strcpy(usrVarValue[sizeVar], "/bin:/usr/bin");
 	sizeVar++;
 	// set ShowTokens to 0 @ index 1
 	strcpy(usrVarName[sizeVar],"ShowTokens");

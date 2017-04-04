@@ -112,6 +112,7 @@ int varIndex(char* token) {
 
 // set variable value
 void set(char** tokens) {
+	int j;
 	// Check for proper format
 	if ( !tokens[0] || !tokens[1]) {
 		fprintf(stderr, "usage: set <variable> <value>\n");
@@ -120,7 +121,7 @@ void set(char** tokens) {
 
 	// if variable is surrounded by quotes, delete them
 	while (tokens[1][0] == '\"' && tokens[1][strlen(tokens[1]) - 1] == '\"') {
-		for (int j = 0; j < strlen(tokens[1]) - 1; j++) {
+		for (j = 0; j < strlen(tokens[1]) - 1; j++) {
 			tokens[1][j] = tokens[1][j+1];
 		}
 		tokens[1][strlen(tokens[1]) - 2] = '\0';
@@ -176,20 +177,11 @@ void displayShellVariables(){
 void doCmd(char** tokens, int type) {
 	pid_t pid;
 	int wait_behavior;
-<<<<<<< HEAD
-	char* buf = malloc(MAXTOKENLEN*2 * sizeof(char));
-	//strncpy(buf, usrVarValue[0], MAXTOKENLEN);
-	//strncat(buf, tokens[1], MAXTOKENLEN);
-	//printf("%s\n", buf);
-
-	if (background) {
-=======
 	char* buf = malloc(MAXLEN);
 	char* tovarbuf = malloc(MAXLEN);
 	int pipefd[2];
-	
+
 	if (type == 1) {
->>>>>>> canim44
 		wait_behavior = WNOHANG;	// run process in background
 	} else {
 		wait_behavior = 0;	// wait until child is finished
@@ -207,9 +199,8 @@ void doCmd(char** tokens, int type) {
 
 	if ((pid = fork())) {
 		// parent
-<<<<<<< HEAD
 		waitpid(pid, status+numProcs, wait_behavior);
-		if (background) {
+		if (type == 1) {
 			processes[numProcs] = (int) pid;
 			numProcs++;
 			if (numProcs >= procsSize) {
@@ -221,7 +212,7 @@ void doCmd(char** tokens, int type) {
 					exit(EXIT_FAILURE);
 				}
 			}
-=======
+		}
 		if (type == 2) {
 			close(pipefd[1]); // close write
 		}
@@ -232,7 +223,6 @@ void doCmd(char** tokens, int type) {
 			strcat(buf, tovarbuf);
 			set(tokenize(buf));
 			free(buf);
->>>>>>> canim44
 		}
 	} else {
 		// child
@@ -248,45 +238,24 @@ void doCmd(char** tokens, int type) {
 				exit(EXIT_FAILURE);
 			}
 		}
-<<<<<<< HEAD
-		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {
-			getcwd(buf, 100);
-			strcat(buf, tokens[1]+1);
-			if (execv(buf, tokens+1)) {
-				perror(tokens[1]);
-=======
 		else if (tokens[0][0] == '.' && tokens[0][1] == '/') {
 			getcwd(buf, 100);
 			strcat(buf, tokens[0]+1);
 			if (execv(buf, tokens)) {
 				perror(tokens[0]);
->>>>>>> canim44
 				exit(EXIT_FAILURE);
 			}
 		}
 		else {
-<<<<<<< HEAD
-			strncpy(buf, usrVarValue[0], MAXTOKENLEN);
-			strncat(buf, tokens[1], MAXTOKENLEN);
-			if (execv(buf, tokens+1)) {
-				perror(tokens[1]);
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
-
-}
-=======
 			strcpy(buf, usrVarValue[0]);
 			strcat(buf, tokens[0]);
-			if (execv(buf, tokens)) {
-				perror(tokens[0]);
+			if (execv(buf, tokens+1)) {
+				perror(tokens[1]);
 				exit(EXIT_FAILURE);
 			}
 		} // else
 	} // else
 } // doCmd
->>>>>>> canim44
 
 int main() {
 	char* user_prompt = malloc(MAXPROMPT);
@@ -359,7 +328,7 @@ int main() {
 					}
 					strncpy(user_prompt, tokens[1], MAXPROMPT);
 				}
-			}
+			} // if
 
 			// dir
 			else if (strcmp(tokens[0], "dir") == 0) {
@@ -415,7 +384,7 @@ int main() {
 			continue;
 		}
 		
-	} 
+	} // while
 
 	return 0;
-}
+} //main

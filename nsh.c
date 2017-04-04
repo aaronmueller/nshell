@@ -156,12 +156,8 @@ void displayShellVariables(){
 void doCmd(char** tokens, int background) {
 	pid_t pid;
 	int wait_behavior;
-	char* buf = malloc(MAXTOKENLEN*2 * sizeof(char));
-	strncpy(buf, usrVarValue[0], MAXTOKENLEN);
-	strncat(buf, tokens[1], MAXTOKENLEN);
-	printf("%s\n", buf);
-
-
+	char* buf = malloc(MAXTOKENLEN * 2 * sizeof(char));
+	
 	if (background) {
 		wait_behavior = WNOHANG;	// run process in background
 	} else {
@@ -174,23 +170,30 @@ void doCmd(char** tokens, int background) {
 		waitpid(pid, &status, wait_behavior);
 	} else {
 		// child
-		if (tokens[1][0] == '/') {
-			if (execv(tokens[1], tokens+1)) {
-				perror(tokens[1]);
+		if (tokens[0][0] == '/') {
+			printf("Option /: %s\n", tokens[0]);
+			if (execv(tokens[0], tokens)) {
+				perror(tokens[0]);
 				exit(EXIT_FAILURE);
 			}
 		}
-		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {
-			free(buf);
-			buf = malloc(MAXTOKENLEN * sizeof(char));
-			if (execve(tokens[1], tokens+1, getcwd(buf, MAXTOKENLEN))) {
-				perror(tokens[1]);
+		else if (tokens[0][0] == '.' && tokens[0][1] == '/') {
+			getcwd(buf, 100);
+			strcat(buf, tokens[0]+1);
+			printf("File: %s\n", buf);
+			if (execv(buf, tokens)) {
+				perror(tokens[0]);
 				exit(EXIT_FAILURE);
 			}
 		}
-		else if (execv(buf, tokens+1)) {
-			perror(tokens[1]);
-			exit(EXIT_FAILURE);
+		else {
+			strcpy(buf, usrVarValue[0]);
+			strcat(buf, tokens[0]);
+			printf("File: %s\n", buf);
+			if (execv(buf, tokens)) {
+				perror(tokens[0]);
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 
@@ -239,24 +242,12 @@ int main() {
 			
 			// do
 			if (strcmp(tokens[0], "do") == 0) {
-				doCmd(tokens, 0);
+				doCmd(tokens+1, 0);
 			}
 
 			// back
 			else if (strcmp(tokens[0], "back") == 0) {
-				doCmd(tokens, 1);
-				/*
-				if (!(pid = fork())) {
-					// child
-					if (execv(tokens[1], tokens+1)) {
-						perror(tokens[1]);
-						exit(1);
-					}
-				} else {
-					// parent
-					waitpid(pid, NULL, WNOHANG);
-				} 
-				*/
+				doCmd(tokens+1, 1);
 			}
 
 			// tovar

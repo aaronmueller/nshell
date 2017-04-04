@@ -176,8 +176,8 @@ void doCmd(char** tokens, int background) {
 	pid_t pid;
 	int wait_behavior;
 	char* buf = malloc(MAXTOKENLEN*2 * sizeof(char));
-	strncpy(buf, usrVarValue[0], MAXTOKENLEN);
-	strncat(buf, tokens[1], MAXTOKENLEN);
+	//strncpy(buf, usrVarValue[0], MAXTOKENLEN);
+	//strncat(buf, tokens[1], MAXTOKENLEN);
 	//printf("%s\n", buf);
 
 	if (background) {
@@ -211,16 +211,20 @@ void doCmd(char** tokens, int background) {
 			}
 		}
 		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {
-			free(buf);
-			buf = malloc(MAXTOKENLEN * sizeof(char));
-			if (execve(tokens[1], tokens+1, getcwd(buf, MAXTOKENLEN))) {
+			getcwd(buf, 100);
+			strcat(buf, tokens[1]+1);
+			if (execv(buf, tokens+1)) {
 				perror(tokens[1]);
 				exit(EXIT_FAILURE);
 			}
 		}
-		else if (execv(buf, tokens+1)) {
-			perror(tokens[1]);
-			exit(EXIT_FAILURE);
+		else {
+			strncpy(buf, usrVarValue[0], MAXTOKENLEN);
+			strncat(buf, tokens[1], MAXTOKENLEN);
+			if (execv(buf, tokens+1)) {
+				perror(tokens[1]);
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 

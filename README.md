@@ -5,6 +5,7 @@ Authors: Aaron Mueller, Connor VanMeter
 # LIST OF FILES
 * nsh.c: contains all code for the shell project
 	- nsh: executable shell binary (run this file)
+* Makefile: file containing directives used with `make`
 * workingProgram: a well-functioning version of the shell; Rafi's nsh
 * README.txt: contains description of files, project, limitations, and special features
 * testfile.txt: for testing the project. run with 'nsh < testfile.txt'
@@ -18,20 +19,22 @@ Authors: Aaron Mueller, Connor VanMeter
 # COMMANDS
 * The nsh shell has the following commands:
 * Built-in Commands
-	- set variable value
-	- prompt newPrompt
-	- dir directoryName
-	- procs
-	- done
-	- pwd (print working directory)
-	- dshv (display shell variable)
+	- set _variable value_: _set_ a _shell_ variable to _value_.
+	- prompt _newPrompt_: sets the shell _prompt_ to _newPrompt_.
+	- dir _directoryName_: change current directory to _directoryName_.
+	- procs: list all processes running in the background.
+	- done: nsh exits with exit status 0. nsh also accepts <control-D>.
+	- pwd: print working directory.
+	- dshv: display all shell variables.
 * Built-in Commands ignore additional tokens.
 * Program Commands
-	- do
-	- back
-	- tovar
+	- do _cmd param*_: execute _cmd_. By default, _cmd_ is searched in a list of directories indivated by PATH. If _cmd_ starts with /, it is a full path name sstarting at root. If _cmd_ starts with ./, it is a path name starting in the current directory.
+	- back _cmd param*_: Same as do, except the program runs in the background.
+	- tovar _variable cmd param*_: Same as do, except the output is assigned to _variable_.
 * If none of the above commands are given, an error message is displayed.
 
 # OTHER FEATURES
 * Shell Variables have split storage. Name are stored in usrVarName. Value are stored in usrVarValue.
 * Index 0 is reserved for PATH. Index 1 is reserved for ShowTokens.
+
+# LIMITATIONS/BUGS

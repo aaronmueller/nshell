@@ -92,11 +92,12 @@ char** tokenize(char* line) {
 	return tokens;
 }
 
+// Returns index of token in usrVarName. Returns -1 if not found.
 int varIndex(char* token) {
-	int i;
-	for (i = 0; i < sizeVar; ++i) {
-		if (strcmp(token, usrVarName[i]) == 0)
-			return i;
+	int index;
+	for (index = 0; index < sizeVar; ++index) {
+		if (strcmp(token, usrVarName[index]) == 0)
+			return index;
 	}
 	return -1;
 }
@@ -153,25 +154,53 @@ void displayShellVariables(){
 		printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
-void doCmd(char** tokens, int background) {
+void doCmd(char** tokens, int type) {
 	pid_t pid;
 	int wait_behavior;
-	char* buf = malloc(MAXTOKENLEN * 2 * sizeof(char));
+	char* buf = malloc(MAXLEN);
+	char* tovarbuf = malloc(MAXLEN);
+	int pipefd[2];
 	
-	if (background) {
+	if (type == 1) {
 		wait_behavior = WNOHANG;	// run process in background
 	} else {
 		wait_behavior = 0;	// wait until child is finished
 	}
+	
+	// Set up pipe for tovar
+	if (type == 2) {
+		strcpy(buf, (tokens-1)[0]);
+		printf("buf start: %s\n", buf);
+		if (pipe(pipefd) == -1) {
+			perror("Problem with pipe.");
+			exit(EXIT_FAILURE);
+		}
+	}
 
 	if ((pid = fork())) {
 		// parent
+		if (type == 2) {
+			close(pipefd[1]); // close write
+		}
 		int status;
 		waitpid(pid, &status, wait_behavior);
+		if (type == 2) {
+			while(read(pipefd[0], tovarbuf, sizeof(tovarbuf)) != 0){};
+			strcat(buf, tovarbuf);
+			printf("tovarbuf: %s\n", tovarbuf);
+			printf("buf end: %s\n", buf);
+			set(tokenize(buf));
+			free(buf);
+		}
 	} else {
 		// child
+		if (type == 2) {
+			close(pipefd[0]); //close unused read
+			dup2(pipefd[1], 1); //stdout to pipe
+			dup2(pipefd[1], 2); //stderr to pipe
+			close(pipefd[1]); //close write
+		}
 		if (tokens[0][0] == '/') {
-			printf("Option /: %s\n", tokens[0]);
 			if (execv(tokens[0], tokens)) {
 				perror(tokens[0]);
 				exit(EXIT_FAILURE);
@@ -180,7 +209,6 @@ void doCmd(char** tokens, int background) {
 		else if (tokens[0][0] == '.' && tokens[0][1] == '/') {
 			getcwd(buf, 100);
 			strcat(buf, tokens[0]+1);
-			printf("File: %s\n", buf);
 			if (execv(buf, tokens)) {
 				perror(tokens[0]);
 				exit(EXIT_FAILURE);
@@ -189,15 +217,13 @@ void doCmd(char** tokens, int background) {
 		else {
 			strcpy(buf, usrVarValue[0]);
 			strcat(buf, tokens[0]);
-			printf("File: %s\n", buf);
 			if (execv(buf, tokens)) {
 				perror(tokens[0]);
 				exit(EXIT_FAILURE);
 			}
-		}
-	}
-
-}
+		} // else
+	} // else
+} // doCmd
 
 int main() {
 	char* user_prompt = malloc(MAXPROMPT);
@@ -206,7 +232,6 @@ int main() {
 	strncpy(user_prompt, "nsh > ", MAXPROMPT);
 	char* line;
 	char** tokens;	
-	pid_t pid = 0;
 	int i;
 
 	// allocate usr variables
@@ -231,10 +256,6 @@ int main() {
 		tokens = tokenize(line);
 
 		// handle commands
-		// - TODO: procs
-		// - if invalid, print error message to stderr
-		// - check and use parameters as appropriate
-		
 		if (*tokens) {
 			if (strcmp(tokens[0], "done") == 0) {
 				break;
@@ -252,37 +273,15 @@ int main() {
 
 			// tovar
 			else if (strcmp(tokens[0], "tovar") == 0) {
-				int pipefd[2];
-				char buf;
-				if (pipe(pipefd) == -1) {
-					perror("Problem with pipe.");
-					exit(EXIT_FAILURE);
-				}
-				pid = fork();
-				if (pid == -1){
-					perror("Problem with fork.");
-					exit(EXIT_FAILURE);
-				}
-				if (pid != 0) {
-					// parent reads from pipe
-					close(pipefd[1]); //close unused write
-					waitpid(pid, NULL, WNOHANG);
-					set(read(pipefd[0], &buf, 1));
-				} else {
-					// child writes to pipe
-					close(pipefd[0]); //close unused read
-					dup2(pipefd[1],STDOUT_FILENO);
-					if (execv(tokens[1], tokens+1)) {
-						perror(tokens[1]);
-						exit(1);
-					}
-				}
+				doCmd(tokens+2, 2);
 			}
-
+			
+			// set
 			else if (strcmp(tokens[0], "set") == 0) {
 				set(tokens+1);
 			}
 
+			// prompt
 			else if (strcmp(tokens[0], "prompt") == 0) {
 				if (!tokens[1]) {
 					fprintf(stderr, "\'prompt\' usage: prompt <new_prompt>\n");
@@ -296,19 +295,23 @@ int main() {
 				}
 			}
 
+			// dir
 			else if (strcmp(tokens[0], "dir") == 0) {
 				dir(tokens);
 			}
 
+			// procs
 			else if (strcmp(tokens[0], "procs") == 0) {
 				procs();
 			}
 		
+			// pwd
 			else if (strcmp(tokens[0], "pwd") == 0) {
 				getcwd(line, 100);
 				printf("%s \n", line);
 			}
 
+			// dshv (display shell vars)
 			else if (strcmp(tokens[0], "dshv") == 0) {
 				displayShellVariables();
 			}
@@ -317,6 +320,7 @@ int main() {
 				fprintf(stderr, "invalid command: %s\n", tokens[0]);
 			}
 			
+			// show tokens
 			if (strcmp(usrVarValue[1], "1") == 0) {
 				i = 0;
 				printf("tokens:");

@@ -263,7 +263,7 @@ int main() {
 	strncpy(user_prompt, "nsh > ", MAXPROMPT);
 	char* line;
 	char** tokens;	
-	int i;
+	int i, j, m;
 	processes = malloc(procsSize * sizeof(int));
 	status = malloc(procsSize * sizeof(int));
 
@@ -289,7 +289,7 @@ int main() {
 		tokens = tokenize(line);
 		
 		//check for variables and perform substitutions
-		for (int j = 1; tokens[j] != NULL; j++) {
+		for (j = 1; tokens[j] != NULL; j++) {
 			// increment until first non-quote character
 			int k = 0;
 			while (tokens[j][k] == '\'' || tokens[j][k] == '\"') {
@@ -303,7 +303,7 @@ int main() {
 					strcat(to_cat, str+(strlen(str) - 1));
 					str[strlen(str) - 1] = '\0';
 				}
-				for (int m = 0; m < sizeVar; m++) {
+				for (m = 0; m < sizeVar; m++) {
 					if (strcmp(str, usrVarName[m]) == 0) {
 						strcpy(tokens[j]+k, usrVarValue[m]);
 						strcat(tokens[j], to_cat);

@@ -119,7 +119,7 @@ void set(char** tokens) {
 	}
 
 	// if variable is surrounded by quotes, delete them
-	while (tokens[1][0] == '\"' && tokens[1][strlen(tokens[1]) - 1] == '\"') {
+	if (tokens[1][0] == '\"' && tokens[1][strlen(tokens[1]) - 1] == '\"') {
 		for (j = 0; j < strlen(tokens[1]) - 1; j++) {
 			tokens[1][j] = tokens[1][j+1];
 		}

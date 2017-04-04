@@ -38,3 +38,7 @@ Authors: Aaron Mueller, Connor VanMeter
 * Index 0 is reserved for PATH. Index 1 is reserved for ShowTokens.
 
 # LIMITATIONS/BUGS
+* Built-in Commands ignore additional tokens. The user is not warned.
+* control-D termintes on a blank line or when hit twice in a row.
+* `back` makes the next command print without a proper prompt.
+* Manually set prompts can't contain spaces, when the default prompt does contain spaces.

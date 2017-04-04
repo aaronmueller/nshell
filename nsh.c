@@ -287,6 +287,32 @@ int main() {
 		// tokenize user input (by spaces) into `tokens`
 		line = read_line();
 		tokens = tokenize(line);
+		
+		//check for variables and perform substitutions
+		for (int j = 1; tokens[j] != NULL; j++) {
+			// increment until first non-quote character
+			int k = 0;
+			while (tokens[j][k] == '\'' || tokens[j][k] == '\"') {
+				k++;
+			}
+			if (tokens[j][k] == '$' && tokens[j][k+1] != '\0') {
+				char* str = malloc(MAXTOKENLEN+1);
+				strcpy(str, tokens[j]+(k+1));
+				char* to_cat = malloc(MAXTOKENLEN+1);
+				while (str[strlen(str) - 1] == '\"' || str[strlen(str) - 1] == '\'') {
+					strcat(to_cat, str+(strlen(str) - 1));
+					str[strlen(str) - 1] = '\0';
+				}
+				for (int m = 0; m < sizeVar; m++) {
+					if (strcmp(str, usrVarName[m]) == 0) {
+						strcpy(tokens[j]+k, usrVarValue[m]);
+						strcat(tokens[j], to_cat);
+					}
+				}
+				free(str);
+				free(to_cat);
+			}
+		}
 
 		// handle commands
 		if (*tokens) {

@@ -111,7 +111,7 @@ int varIndex(char* token) {
 
 // set variable value
 void set(char** tokens) {
-	int j;
+	int i = 0, j;
 	// Check for proper format
 	if ( !tokens[0] || !tokens[1]) {
 		fprintf(stderr, "usage: set <variable> <value>\n");
@@ -128,7 +128,14 @@ void set(char** tokens) {
 
 	// Check if token starts with a non-alphabet character
 	if ( !isalpha(tokens[0][0]) ) {
-		fprintf(stderr, "variable must start with an alphabet character");
+		fprintf(stderr, "variable must start with an alphabet character\n");
+		return;
+	}
+	
+	// Check if variable contains non-alphanumeric character
+	while ( isalnum(tokens[0][i] )) {i++;};
+	if(i != strlen(tokens[0])) {
+		fprintf(stderr, "variable contains non-alphanumeric character\n");
 		return;
 	}
 
@@ -144,10 +151,14 @@ void set(char** tokens) {
 	// Find index of var name (if it exists)
 	int index = varIndex(tokens[0]);
 	// Truncate var name/value if > MAXTOKENLEN
-	if (sizeof(tokens[0]) > MAXTOKENLEN)
+	if (sizeof(tokens[0]) > MAXTOKENLEN) {
 		tokens[0][MAXTOKENLEN-1] = '\0';
-	if (sizeof(tokens[1]) > MAXTOKENLEN)
+		printf("Truncated variable to: %s", tokens[0]);
+	}
+	if (sizeof(tokens[1]) > MAXTOKENLEN) {
 		tokens[1][MAXTOKENLEN-1] = '\0';
+		printf("Truncated value to: %s", tokens[1]);
+	}
 	// Increment size if var name is new
 	if (index == -1) {
 		index = sizeVar;
@@ -242,7 +253,7 @@ void doCmd(char** tokens, int type) {
 			int path_worked = 0;
 			char* path;
 			path = strtok(usrVarValue[0], ":");
-
+			printf("path: %s", path);
 			// loop through all paths, separated by colons
 			while (path != NULL) {
 				strcpy(buf, path);
@@ -252,8 +263,8 @@ void doCmd(char** tokens, int type) {
 				}
 				strcat(buf, tokens[0]);
 				if (execv(buf, tokens)) {
-					//perror(tokens[0]);
-					//exit(EXIT_FAILURE);
+					perror(tokens[0]);
+					exit(EXIT_FAILURE);
 				} else {
 					path_worked = 1;
 					//break;

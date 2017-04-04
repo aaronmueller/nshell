@@ -100,17 +100,19 @@ char** tokenize(char* line) {
 	return tokens;
 }
 
+// Returns index of token in usrVarName. Returns -1 if not found.
 int varIndex(char* token) {
-	int i;
-	for (i = 0; i < sizeVar; ++i) {
-		if (strcmp(token, usrVarName[i]) == 0)
-			return i;
+	int index;
+	for (index = 0; index < sizeVar; ++index) {
+		if (strcmp(token, usrVarName[index]) == 0)
+			return index;
 	}
 	return -1;
 }
 
 // set variable value
 void set(char** tokens) {
+	int j;
 	// Check for proper format
 	if ( !tokens[0] || !tokens[1]) {
 		fprintf(stderr, "usage: set <variable> <value>\n");
@@ -119,7 +121,7 @@ void set(char** tokens) {
 
 	// if variable is surrounded by quotes, delete them
 	while (tokens[1][0] == '\"' && tokens[1][strlen(tokens[1]) - 1] == '\"') {
-		for (int j = 0; j < strlen(tokens[1]) - 1; j++) {
+		for (j = 0; j < strlen(tokens[1]) - 1; j++) {
 			tokens[1][j] = tokens[1][j+1];
 		}
 		tokens[1][strlen(tokens[1]) - 2] = '\0';
@@ -172,18 +174,27 @@ void displayShellVariables(){
 		printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
-void doCmd(char** tokens, int background) {
+void doCmd(char** tokens, int type) {
 	pid_t pid;
 	int wait_behavior;
-	char* buf = malloc(MAXTOKENLEN*2 * sizeof(char));
-	//strncpy(buf, usrVarValue[0], MAXTOKENLEN);
-	//strncat(buf, tokens[1], MAXTOKENLEN);
-	//printf("%s\n", buf);
+	char* buf = malloc(MAXLEN);
+	char* tovarbuf = malloc(MAXLEN);
+	int pipefd[2];
 
-	if (background) {
+	if (type == 1) {
 		wait_behavior = WNOHANG;	// run process in background
 	} else {
 		wait_behavior = 0;			// wait until child is finished
+	}
+	
+	// Set up pipe for tovar
+	if (type == 2) {
+		strcpy(buf, (tokens-1)[0]);
+		strcat(buf, " ");
+		if (pipe(pipefd) == -1) {
+			perror("Problem with pipe.");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if ((pid = fork())) {
@@ -191,7 +202,7 @@ void doCmd(char** tokens, int background) {
 		// add process to process list if running in background;
 		// store status of process in the status[] array
 		waitpid(pid, status+numProcs, wait_behavior);
-		if (background) {
+		if (type == 1) {
 			processes[numProcs] = (int) pid;
 			numProcs++;
 			// if numProcs exceeds allowed size, allocate more memory
@@ -205,8 +216,20 @@ void doCmd(char** tokens, int background) {
 				}
 			}
 		}
+		if (type == 2) {
+			close(pipefd[1]); // close write
+		}
+		int status;
+		waitpid(pid, &status, wait_behavior);
+		if (type == 2) {
+			while( read(pipefd[0], tovarbuf, MAXLEN) ){};
+			strcat(buf, tovarbuf);
+			set(tokenize(buf));
+			free(buf);
+		}
 	} else {
 		// child
+<<<<<<< HEAD
 		// use user-provided path
 		if (tokens[1][0] == '/') {
 			if (execv(tokens[1], tokens+1)) {
@@ -216,25 +239,39 @@ void doCmd(char** tokens, int background) {
 		}
 		// execute local executable file
 		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {
+=======
+		if (type == 2) {
+			close(pipefd[0]); //close unused read
+			dup2(pipefd[1], 1); //stdout to pipe
+			dup2(pipefd[1], 2); //stderr to pipe
+			close(pipefd[1]); //close write
+		}
+		if (tokens[0][0] == '/') {
+			if (execv(tokens[0], tokens)) {
+				perror(tokens[0]);
+				exit(EXIT_FAILURE);
+			}
+		}
+		else if (tokens[0][0] == '.' && tokens[0][1] == '/') {
+>>>>>>> master
 			getcwd(buf, 100);
-			strcat(buf, tokens[1]+1);
-			if (execv(buf, tokens+1)) {
-				perror(tokens[1]);
+			strcat(buf, tokens[0]+1);
+			if (execv(buf, tokens)) {
+				perror(tokens[0]);
 				exit(EXIT_FAILURE);
 			}
 		}
 		// execute using an implied PATH
 		else {
-			strncpy(buf, usrVarValue[0], MAXTOKENLEN);
-			strncat(buf, tokens[1], MAXTOKENLEN);
-			if (execv(buf, tokens+1)) {
-				perror(tokens[1]);
+			strcpy(buf, usrVarValue[0]);
+			strcat(buf, tokens[0]);
+			if (execv(buf, tokens)) {
+				perror(tokens[0]);
 				exit(EXIT_FAILURE);
 			}
-		}
-	}
-
-}
+		} // else
+	} // else
+} // doCmd
 
 int main() {
 	char* user_prompt = malloc(MAXPROMPT);
@@ -243,7 +280,6 @@ int main() {
 	strncpy(user_prompt, "nsh > ", MAXPROMPT);
 	char* line;
 	char** tokens;	
-	pid_t pid = 0;
 	int i;
 	processes = malloc(procsSize * sizeof(int));
 	status = malloc(procsSize * sizeof(int));
@@ -296,10 +332,6 @@ int main() {
 		}
 
 		// handle commands
-		// - TODO: procs
-		// - if invalid, print error message to stderr
-		// - check and use parameters as appropriate
-		
 		if (*tokens) {
 			if (strcmp(tokens[0], "done") == 0) {
 				break;
@@ -307,59 +339,25 @@ int main() {
 			
 			// do
 			if (strcmp(tokens[0], "do") == 0) {
-				doCmd(tokens, 0);
+				doCmd(tokens+1, 0);
 			}
 
 			// back
 			else if (strcmp(tokens[0], "back") == 0) {
-				doCmd(tokens, 1);
-				/*
-				if (!(pid = fork())) {
-					// child
-					if (execv(tokens[1], tokens+1)) {
-						perror(tokens[1]);
-						exit(1);
-					}
-				} else {
-					// parent
-					waitpid(pid, NULL, WNOHANG);
-				} 
-				*/
+				doCmd(tokens+1, 1);
 			}
 
 			// tovar
 			else if (strcmp(tokens[0], "tovar") == 0) {
-				int pipefd[2];
-				char buf;
-				if (pipe(pipefd) == -1) {
-					perror("Problem with pipe.");
-					exit(EXIT_FAILURE);
-				}
-				pid = fork();
-				if (pid == -1){
-					perror("Problem with fork.");
-					exit(EXIT_FAILURE);
-				}
-				if (pid != 0) {
-					// parent reads from pipe
-					close(pipefd[1]); //close unused write
-					waitpid(pid, NULL, WNOHANG);
-					set(read(pipefd[0], &buf, 1));
-				} else {
-					// child writes to pipe
-					close(pipefd[0]); //close unused read
-					dup2(pipefd[1],STDOUT_FILENO);
-					if (execv(tokens[1], tokens+1)) {
-						perror(tokens[1]);
-						exit(1);
-					}
-				}
+				doCmd(tokens+2, 2);
 			}
-
+			
+			// set
 			else if (strcmp(tokens[0], "set") == 0) {
 				set(tokens+1);
 			}
 
+			// prompt
 			else if (strcmp(tokens[0], "prompt") == 0) {
 				if (!tokens[1]) {
 					fprintf(stderr, "\'prompt\' usage: prompt <new_prompt>\n");
@@ -371,12 +369,14 @@ int main() {
 					}
 					strncpy(user_prompt, tokens[1], MAXPROMPT);
 				}
-			}
+			} // if
 
+			// dir
 			else if (strcmp(tokens[0], "dir") == 0) {
 				dir(tokens);
 			}
 
+			// procs
 			else if (strcmp(tokens[0], "procs") == 0) {
 				if (numProcs == 0) {
 					printf("No background processes.\n");
@@ -393,11 +393,13 @@ int main() {
 				}
 			}
 		
+			// pwd
 			else if (strcmp(tokens[0], "pwd") == 0) {
 				getcwd(line, 100);
 				printf("%s \n", line);
 			}
 
+			// dshv (display shell vars)
 			else if (strcmp(tokens[0], "dshv") == 0) {
 				displayShellVariables();
 			}
@@ -406,6 +408,7 @@ int main() {
 				fprintf(stderr, "invalid command: %s\n", tokens[0]);
 			}
 			
+			// show tokens
 			if (strcmp(usrVarValue[1], "1") == 0) {
 				i = 0;
 				printf("tokens:");
@@ -422,7 +425,7 @@ int main() {
 			continue;
 		}
 		
-	} 
+	} // while
 
 	return 0;
-}
+} //main

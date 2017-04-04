@@ -183,15 +183,18 @@ void doCmd(char** tokens, int background) {
 	if (background) {
 		wait_behavior = WNOHANG;	// run process in background
 	} else {
-		wait_behavior = 0;	// wait until child is finished
+		wait_behavior = 0;			// wait until child is finished
 	}
 
 	if ((pid = fork())) {
 		// parent
+		// add process to process list if running in background;
+		// store status of process in the status[] array
 		waitpid(pid, status+numProcs, wait_behavior);
 		if (background) {
 			processes[numProcs] = (int) pid;
 			numProcs++;
+			// if numProcs exceeds allowed size, allocate more memory
 			if (numProcs >= procsSize) {
 				procsSize += MAXPROCS;
 				processes = realloc(processes, procsSize * sizeof(int));
@@ -204,12 +207,14 @@ void doCmd(char** tokens, int background) {
 		}
 	} else {
 		// child
+		// use user-provided path
 		if (tokens[1][0] == '/') {
 			if (execv(tokens[1], tokens+1)) {
 				perror(tokens[1]);
 				exit(EXIT_FAILURE);
 			}
 		}
+		// execute local executable file
 		else if (tokens[1][0] == '.' && tokens[1][1] == '/') {
 			getcwd(buf, 100);
 			strcat(buf, tokens[1]+1);
@@ -218,6 +223,7 @@ void doCmd(char** tokens, int background) {
 				exit(EXIT_FAILURE);
 			}
 		}
+		// execute using an implied PATH
 		else {
 			strncpy(buf, usrVarValue[0], MAXTOKENLEN);
 			strncat(buf, tokens[1], MAXTOKENLEN);
@@ -262,6 +268,32 @@ int main() {
 		// tokenize user input (by spaces) into `tokens`
 		line = read_line();
 		tokens = tokenize(line);
+
+		//check for variables and perform substitutions
+		for (int j = 1; tokens[j] != NULL; j++) {
+			// increment until first non-quote character
+			int k = 0;
+			while (tokens[j][k] == '\'' || tokens[j][k] == '\"') {
+				k++;
+			}
+			if (tokens[j][k] == '$' && tokens[j][k+1] != '\0') {
+				char* str = malloc(MAXTOKENLEN+1);
+				strcpy(str, tokens[j]+(k+1));
+				char* to_cat = malloc(MAXTOKENLEN+1);
+				while (str[strlen(str) - 1] == '\"' || str[strlen(str) - 1] == '\'') {
+					strcat(to_cat, str+(strlen(str) - 1));
+					str[strlen(str) - 1] = '\0';
+				}
+				for (int m = 0; m < sizeVar; m++) {
+					if (strcmp(str, usrVarName[m]) == 0) {
+						strcpy(tokens[j]+k, usrVarValue[m]);
+						strcat(tokens[j], to_cat);
+					}
+				}
+				free(str);
+				free(to_cat);
+			}
+		}
 
 		// handle commands
 		// - TODO: procs
@@ -333,7 +365,7 @@ int main() {
 					fprintf(stderr, "\'prompt\' usage: prompt <new_prompt>\n");
 				}
 				else {
-					if (strlen(tokens[1]) > 255) {
+					if (strlen(tokens[1]) > MAXPROMPT) {
 						fprintf(stderr, 
 								"warning: prompt too long. truncating to 256 characters.\n");
 					}

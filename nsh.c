@@ -249,8 +249,8 @@ void doCmd(char** tokens, int type) {
 		else {
 			strcpy(buf, usrVarValue[0]);
 			strcat(buf, tokens[0]);
-			if (execv(buf, tokens+1)) {
-				perror(tokens[1]);
+			if (execv(buf, tokens)) {
+				perror(tokens[0]);
 				exit(EXIT_FAILURE);
 			}
 		} // else
@@ -268,7 +268,6 @@ int main() {
 	processes = malloc(procsSize * sizeof(int));
 	status = malloc(procsSize * sizeof(int));
 
-	printf("\n");
 	// allocate usr variables
 	for (i = 0; i < usrVarSize; ++i) {
 		usrVarName[i] = (char*)malloc(MAXTOKENLEN+1);

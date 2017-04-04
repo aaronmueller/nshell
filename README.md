@@ -23,7 +23,7 @@ Authors: Aaron Mueller, Connor VanMeter
 	- prompt _newPrompt_: sets the shell _prompt_ to _newPrompt_.
 	- dir _directoryName_: change current directory to _directoryName_.
 	- procs: list all processes running in the background.
-	- done: nsh exits with exit status 0. nsh also accepts <control-D>.
+	- done: nsh exits with exit status 0. nsh also accepts control-D.
 	- pwd: print working directory.
 	- dshv: display all shell variables.
 * Built-in Commands ignore additional tokens.

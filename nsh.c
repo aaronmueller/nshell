@@ -7,17 +7,20 @@
 #include <sys/wait.h>
 #include "built_in.h"
 
-#define MAXLEN 1024	// max # of chars from line of user input (flexible)
+#define MAXLEN 1024		// max # of chars from line of user input (flexible)
 #define MAXTOKENS 128	// max # of tokens in cmd (flexible)
 #define MAXPROMPT 256	// max length of prompt
 #define MAXTOKENLEN 256	// max length of tokens 
-#define MAXPROCS 128
+#define MAXPROCS 2048	// max # of processes
 
 int usrVarSize = 10;	// defult size of usr var array (flexible)
 char **usrVarName;
 char **usrVarValue;
 int sizeVar = 0; 	// index of last set variable value
 int *processes;
+int numProcs;
+int procsSize = MAXPROCS;
+int *status;
 
 char* read_line() {
 	int pos = 0;
@@ -33,18 +36,23 @@ char* read_line() {
 
 	while(1) {
 		c = getchar();
+
+		//if ctrl-d, quit immediately
 		if (c == '\377') {
 			strcpy(buf, "done\n");
 			return buf;
 		}
+		//end buffer at newline
 		else if (c == '\n') {
 			buf[pos] = '\0';
 			return buf;
 		}
+		//ignore everything after comment marker (%); stop reading
 		else if(c == '%'){
 			buf[pos] = '\0';
 			skip = 1;
 		}
+		//read character as normal; keep going
 		else if (!skip) {
 			buf[pos] = c;
 		}
@@ -109,11 +117,21 @@ void set(char** tokens) {
 		return;
 	}
 
+	// if variable is surrounded by quotes, delete them
+	while (tokens[1][0] == '\"' && tokens[1][strlen(tokens[1]) - 1] == '\"') {
+		for (int j = 0; j < strlen(tokens[1]) - 1; j++) {
+			tokens[1][j] = tokens[1][j+1];
+		}
+		tokens[1][strlen(tokens[1]) - 2] = '\0';
+	}
+
 	// Check if token starts with a non-alphabet character
 	if ( !isalpha(tokens[0][0]) ) {
 		fprintf(stderr, "variable must start with an alphabet character");
 		return;
 	}
+
+	if (tokens[0] )
 
 	// Check if more space is needed
 	if (usrVarSize < sizeVar) {
@@ -141,6 +159,7 @@ void set(char** tokens) {
 			strcat(tokens[1], "/");
 		}
 	}
+
 	strcpy(usrVarValue[index], tokens[1]);
 	
 	// Display results of set
@@ -159,8 +178,7 @@ void doCmd(char** tokens, int background) {
 	char* buf = malloc(MAXTOKENLEN*2 * sizeof(char));
 	strncpy(buf, usrVarValue[0], MAXTOKENLEN);
 	strncat(buf, tokens[1], MAXTOKENLEN);
-	printf("%s\n", buf);
-
+	//printf("%s\n", buf);
 
 	if (background) {
 		wait_behavior = WNOHANG;	// run process in background
@@ -170,8 +188,20 @@ void doCmd(char** tokens, int background) {
 
 	if ((pid = fork())) {
 		// parent
-		int status;
-		waitpid(pid, &status, wait_behavior);
+		waitpid(pid, status+numProcs, wait_behavior);
+		if (background) {
+			processes[numProcs] = (int) pid;
+			numProcs++;
+			if (numProcs >= procsSize) {
+				procsSize += MAXPROCS;
+				processes = realloc(processes, procsSize * sizeof(int));
+				status = realloc(processes, procsSize * sizeof(int));
+				if (!processes || !status) {
+					fprintf(stderr, "nsh: allocation error\n");
+					exit(EXIT_FAILURE);
+				}
+			}
+		}
 	} else {
 		// child
 		if (tokens[1][0] == '/') {
@@ -205,6 +235,8 @@ int main() {
 	char** tokens;	
 	pid_t pid = 0;
 	int i;
+	processes = malloc(procsSize * sizeof(int));
+	status = malloc(procsSize * sizeof(int));
 
 	// allocate usr variables
 	for (i = 0; i < usrVarSize; ++i) {
@@ -310,7 +342,19 @@ int main() {
 			}
 
 			else if (strcmp(tokens[0], "procs") == 0) {
-				procs();
+				if (numProcs == 0) {
+					printf("No background processes.\n");
+				}
+				else {
+					printf("Background processes: \n");
+					for (i = 0; i < numProcs; i++) {
+						printf("\t%i", processes[i]);
+						if (WIFEXITED(status[i]) || WIFSIGNALED(status[i])) {
+							printf(" (finished)");
+						}
+						printf("\n");
+					}
+				}
 			}
 		
 			else if (strcmp(tokens[0], "pwd") == 0) {

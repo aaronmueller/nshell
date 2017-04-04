@@ -343,6 +343,17 @@ int main() {
 				break;
 			}
 			
+			// show tokens
+			if (strcmp(usrVarValue[1], "1") == 0) {
+				i = 0;
+				printf("tokens:");
+				while (tokens[i]) {
+					printf(" \'%s\'", tokens[i]);
+					i++;
+				}
+				printf("\n");
+			}
+
 			// do
 			if (strcmp(tokens[0], "do") == 0) {
 				doCmd(tokens+1, 0);
@@ -425,17 +436,6 @@ int main() {
 				fprintf(stderr, "invalid command: %s\n", tokens[0]);
 			}
 			
-			// show tokens
-			if (strcmp(usrVarValue[1], "1") == 0) {
-				i = 0;
-				printf("tokens:");
-				while (tokens[i]) {
-					printf(" \'%s\'", tokens[i]);
-					i++;
-				}
-				printf("\n");
-			}
-
 			free(line);
 			free(tokens);
 		} else {

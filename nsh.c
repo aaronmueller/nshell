@@ -7,7 +7,7 @@
 #include <sys/wait.h>
 #include "built_in.h"
 
-#define MAXLEN 1024		// max # of chars from line of user input (flexible)
+#define MAXLEN 1024	// max # of chars from line of user input (flexible)
 #define MAXTOKENS 128	// max # of tokens in cmd (flexible)
 #define MAXPROMPT 256	// max length of prompt
 #define MAXTOKENLEN 256	// max length of tokens 
@@ -154,6 +154,7 @@ void set(char** tokens) {
 		index = sizeVar;
 		sizeVar++;
 	}
+
 	// Set var name and value
 	strcpy(usrVarName[index], tokens[0]);
 	if (index == 0) {
@@ -180,6 +181,7 @@ void doCmd(char** tokens, int type) {
 	char* buf = malloc(MAXLEN);
 	char* tovarbuf = malloc(MAXLEN);
 	int pipefd[2];
+	int chld_status;
 
 	if (type == 1) {
 		wait_behavior = WNOHANG;	// run process in background
@@ -199,7 +201,8 @@ void doCmd(char** tokens, int type) {
 
 	if ((pid = fork())) {
 		// parent
-		waitpid(pid, status+numProcs, wait_behavior);
+		waitpid(pid, &chld_status, wait_behavior);
+		status[numProcs] = chld_status;
 		if (type == 1) {
 			processes[numProcs] = (int) pid;
 			numProcs++;
@@ -215,10 +218,6 @@ void doCmd(char** tokens, int type) {
 		}
 		if (type == 2) {
 			close(pipefd[1]); // close write
-		}
-		int status;
-		waitpid(pid, &status, wait_behavior);
-		if (type == 2) {
 			while( read(pipefd[0], tovarbuf, MAXLEN) ){};
 			strcat(buf, tovarbuf);
 			set(tokenize(buf));
@@ -264,7 +263,7 @@ int main() {
 	strncpy(user_prompt, "nsh > ", MAXPROMPT);
 	char* line;
 	char** tokens;	
-	int i;
+	int i, j, m;
 	processes = malloc(procsSize * sizeof(int));
 	status = malloc(procsSize * sizeof(int));
 
@@ -290,7 +289,7 @@ int main() {
 		tokens = tokenize(line);
 		
 		//check for variables and perform substitutions
-		for (int j = 1; tokens[j] != NULL; j++) {
+		for (j = 1; tokens[j] != NULL; j++) {
 			// increment until first non-quote character
 			int k = 0;
 			while (tokens[j][k] == '\'' || tokens[j][k] == '\"') {
@@ -304,7 +303,7 @@ int main() {
 					strcat(to_cat, str+(strlen(str) - 1));
 					str[strlen(str) - 1] = '\0';
 				}
-				for (int m = 0; m < sizeVar; m++) {
+				for (m = 0; m < sizeVar; m++) {
 					if (strcmp(str, usrVarName[m]) == 0) {
 						strcpy(tokens[j]+k, usrVarValue[m]);
 						strcat(tokens[j], to_cat);
@@ -369,8 +368,11 @@ int main() {
 					printf("Background processes: \n");
 					for (i = 0; i < numProcs; i++) {
 						printf("\t%i", processes[i]);
-						if (WIFEXITED(status[i]) || WIFSIGNALED(status[i])) {
+						if (WIFEXITED(status[i])){
 							printf(" (finished)");
+						}
+	 					else if(WIFSIGNALED(status[i])){
+							printf(" (killed)");
 						}
 						printf("\n");
 					}

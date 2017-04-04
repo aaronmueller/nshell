@@ -170,7 +170,7 @@ void doCmd(char** tokens, int type) {
 	// Set up pipe for tovar
 	if (type == 2) {
 		strcpy(buf, (tokens-1)[0]);
-		printf("buf start: %s\n", buf);
+		strcat(buf, " ");
 		if (pipe(pipefd) == -1) {
 			perror("Problem with pipe.");
 			exit(EXIT_FAILURE);
@@ -185,10 +185,8 @@ void doCmd(char** tokens, int type) {
 		int status;
 		waitpid(pid, &status, wait_behavior);
 		if (type == 2) {
-			while(read(pipefd[0], tovarbuf, sizeof(tovarbuf)) != 0){};
+			while( read(pipefd[0], tovarbuf, MAXLEN) ){};
 			strcat(buf, tovarbuf);
-			printf("tovarbuf: %s\n", tovarbuf);
-			printf("buf end: %s\n", buf);
 			set(tokenize(buf));
 			free(buf);
 		}
@@ -234,6 +232,7 @@ int main() {
 	char** tokens;	
 	int i;
 
+	printf("\n");
 	// allocate usr variables
 	for (i = 0; i < usrVarSize; ++i) {
 		usrVarName[i] = (char*)malloc(MAXTOKENLEN+1);

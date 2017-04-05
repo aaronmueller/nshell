@@ -19,7 +19,7 @@ int sizeVar = 0; 	// index of last set variable value
 int *processes;
 int numProcs;
 int procsSize = MAXPROCS;
-int *status;
+int status;
 
 char* read_line() {
 	int pos = 0;
@@ -180,18 +180,11 @@ void displayShellVariables(){
 
 void doCmd(char** tokens, int type) {
 	pid_t pid;
-	int wait_behavior;
 	char* buf = malloc(MAXLEN);
 	char* tovarbuf = malloc(MAXLEN);
 	int pipefd[2];
 	int chld_status;
 
-	if (type == 1) {
-		wait_behavior = WNOHANG;	// run process in background
-	} else {
-		wait_behavior = 0;	// wait until child is finished
-	}
-	
 	// Set up pipe for tovar
 	if (type == 2) {
 		strcpy(buf, (tokens-1)[0]);
@@ -204,16 +197,16 @@ void doCmd(char** tokens, int type) {
 
 	if ((pid = fork())) {
 		// parent
-		waitpid(pid, &chld_status, wait_behavior);
-		status[numProcs] = chld_status;
-		if (type == 1) {
+		if (type != 1) {
+			waitpid(pid, &chld_status, 0);
+		}
+		else {
 			processes[numProcs] = (int) pid;
 			numProcs++;
 			if (numProcs >= procsSize) {
 				procsSize += MAXPROCS;
 				processes = realloc(processes, procsSize * sizeof(int));
-				status = realloc(processes, procsSize * sizeof(int));
-				if (!processes || !status) {
+				if (!processes) {
 					fprintf(stderr, "nsh: allocation error\n");
 					exit(EXIT_FAILURE);
 				}
@@ -287,7 +280,6 @@ int main() {
 	char** tokens;	
 	int i, j, m;
 	processes = malloc(procsSize * sizeof(int));
-	status = malloc(procsSize * sizeof(int));
 
 	// allocate usr variables
 	for (i = 0; i < usrVarSize; ++i) {
@@ -407,11 +399,9 @@ int main() {
 					printf("Background processes: \n");
 					for (i = 0; i < numProcs; i++) {
 						printf("\t%i", processes[i]);
-						if (WIFEXITED(status[i])){
+						status = waitpid(processes[i], &status, WNOHANG);
+						if (status){
 							printf(" (finished)");
-						}
-	 					else if(WIFSIGNALED(status[i])){
-							printf(" (killed)");
 						}
 						printf("\n");
 					}

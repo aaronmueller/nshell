@@ -79,7 +79,7 @@ int varIndex(char* token) {
 }
 
 // tokenizes user input. tokens can be a single word or a string
-// surrounded by double quotes. Variable substituion happens at end.
+// surrounded by double quotes. Extra spaces are discounted.
 char** tokenize(char* line) {
 	int size = MAXTOKENS;
 	int pos = 0, c;
@@ -146,16 +146,7 @@ char** tokenize(char* line) {
 	if (state != BASE)
 		tokens[pos++] = token_start;
 	tokens[pos] = NULL;
-	pos = 0;
 
-	// Variable Substituion
-	while(tokens[pos])
-	{
-		if((c = varIndex(tokens[pos])) != -1) {
-			strcpy(tokens[pos], usrVarValue[c]);
-		}
-		pos++;
-	}
 	return tokens;
 }
 

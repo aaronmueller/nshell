@@ -108,7 +108,7 @@ char** tokenize(char* line) {
 				}
 				if (c == '"') {
 					state = STRING;
-					token_start = token+1;
+					token_start = token;
 					continue;
 				}
 				state = WORD;
@@ -116,6 +116,7 @@ char** tokenize(char* line) {
 				continue;
 			// TOKEN has no "
 			case WORD:
+				// reach blank space
 				if (isspace(c)) {
 					*token = 0;
 					tokens[pos++] = token_start;
@@ -126,7 +127,7 @@ char** tokenize(char* line) {
 			case STRING:	
 				if (c == '"') {
 					*token = 0;
-					tokens[pos++] = token_start;
+					tokens[pos++] = token_start+1;
 					state = BASE;
 				}
 				continue;

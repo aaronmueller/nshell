@@ -9,14 +9,16 @@ Authors: Aaron Mueller, Connor VanMeter
 The code works as follows:
 1. The user inputs a line of text. This is read into a C string.
 2. Upon a new line, the line of text is tokenized by spaces or quotes using a state machine.
-	- Connor: description here?
+	- Three different states: BASE, WORD, STRING
+	- BASE: Check for extra white space before and after `token`
+	- WORD: `token` was not precluded by "
+	- STRING: `token` was preculude by "
 3. The first token in the token list is used to determine which command to perform (see list below).
 	- `do`, `back`, and `tovar` work using fork() and execv(). See `doCmd()` in `nsh.c`.
-	- `prompt`, `dir`, `procs`, and `pwd` are handled within `main()` in `nsh.c`. See lines 366 - 415.
+	- `prompt`, `dir`, `procs`, and `pwd` are handled within `main()` in `nsh.c`.
+	- `set` checks for valid variable name before storing variable and value in two differet arrays using the same index
+	- `dshv` loops through set shell variables and prints them
 	- `done` breaks the main loop upon an `Enter` press. `Ctrl-D` ends `nsh` immediately.
-	- Other commands have their own methods.
-		# See `set()` in `nsh.c` (lines 120 - 173) to see how `set` works.
-		# See `displayShellVariables()` in `nsh.c` (lines 175 - 179) to see how `dshv` works.
 
 # LIST OF FILES
 * nsh.c: contains all code for the shell project
@@ -31,7 +33,7 @@ The code works as follows:
 # HOW TO RUN/EXIT THIS PROJECT
 1. Use `make` to compile nsh.
 2. Run `./nsh` to enter the shell.
-3. When you are finished, type `done` into the shell to exit.
+3. When you are finished, type `done` into the shell or `ctrl-D` at prompt to exit.
 
 # COMMANDS
 * The nsh shell has the following commands:
@@ -61,9 +63,10 @@ The code works as follows:
 	- The next command is entered on a new line after that, meaning that it is entered after no prompt.
 	- workingProgram does this.
 * Manually-set prompts can't contain spaces, whereas the default prompt does contain spaces (workingProgram does this).
-* The first pair of quotes per token are removed.
+* The state machine has interesting token behavior
 	- "token" -> token
-	- ""token"" -> "token"
-	- "t"oken" -> t"oken
+	- ""token"" ->  token""
+	- "t"oken" -> t oken"
+	- to"k"en -> to"k"en
 * `procs` does not remove finished processes from the display list, but it does mark them as finished.
 	- The questions page on the course site states that this is acceptable.

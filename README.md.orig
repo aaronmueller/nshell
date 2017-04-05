@@ -10,6 +10,15 @@ The code works as follows:
 1. The user inputs a line of text. This is read into a C string.
 2. Upon a new line, the line of text is tokenized by spaces or quotes using a state machine.
 	- Three different states: BASE, WORD, STRING
+<<<<<<< HEAD
+	- BASE: Check for extra white space before and after `token`
+	- WORD: `token` was not precluded by "
+	- STRING: `token` was preculude by "
+3. The first token in the token list is used to determine which command to perform (see list below).
+	- `do`, `back`, and `tovar` work using fork() and execv(). See `doCmd()` in `nsh.c`.
+	- `prompt`, `dir`, `procs`, and `pwd` are handled within `main()` in `nsh.c`.
+	- `set` checks for valid variable name before storing variable and value in two differet arrays using the same index
+=======
 	- BASE: check for extra white space before and after `token`
 	- WORD: `token` was not preceded by "
 	- STRING: `token` was preceded by "
@@ -17,6 +26,7 @@ The code works as follows:
 	- `do`, `back`, and `tovar` work using fork() and execv(). See `doCmd()` in `nsh.c`.
 	- `prompt`, `dir`, `procs`, and `pwd` are handled within `main()` in `nsh.c`.
 	- `set` checks for valid variable name before storing variable and value in two different arrays using the same index
+>>>>>>> 56b6158beefcb1176600315fcedbfc544b1d9f1c
 	- `dshv` loops through set shell variables and prints them
 	- `done` breaks the main loop upon an `Enter` press. `Ctrl-D` ends `nsh` immediately.
 
@@ -63,10 +73,17 @@ The code works as follows:
 	- The next command is entered on a new line after that, meaning that it is entered after no prompt.
 	- workingProgram does this.
 * Manually-set prompts can't contain spaces, whereas the default prompt does contain spaces (workingProgram does this).
+<<<<<<< HEAD
+* The state machine has interesting token behavior. " cannot be escaped (\").
+	- "token" -> token
+	- ""token"" ->  token""
+	- "t"oken" -> t oken"
+=======
 * The state machine has interesting quotes behavior.
 	- "token" -> token
 	- ""token"" -> token""
 	- "t"oken" -> token"
+>>>>>>> 56b6158beefcb1176600315fcedbfc544b1d9f1c
 	- to"k"en -> to"k"en
 * `procs` does not remove finished processes from the display list, but it does mark them as finished.
 	- The questions page on the course site states that this is acceptable.

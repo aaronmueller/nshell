@@ -22,7 +22,6 @@ The code works as follows:
 
 # LIST OF FILES
 * nsh.c: contains all code for the shell project
-	- nsh: executable shell binary (run this file)
 * Makefile: file containing directives used with `make`
 * workingProgram: a well-functioning version of the shell; Rafi's nsh
 * README.txt: contains description of files, project, limitations, and special features

@@ -15,8 +15,8 @@ The code works as follows:
 	- `prompt`, `dir`, `procs`, and `pwd` are handled within `main()` in `nsh.c`. See lines 366 - 415.
 	- `done` breaks the main loop upon an `Enter` press. `Ctrl-D` ends `nsh` immediately.
 	- Other commands have their own methods.
-		# See `set()` in `nsh.c` (lines 120 - 173) to see how `set` works.
-		# See `displayShellVariables()` in `nsh.c` (lines 175 - 179) to see how `dshv` works.
+		- See `set()` in `nsh.c` (lines 120 - 173) to see how `set` works.
+		- See `displayShellVariables()` in `nsh.c` (lines 175 - 179) to see how `dshv` works.
 
 # LIST OF FILES
 * nsh.c: contains all code for the shell project

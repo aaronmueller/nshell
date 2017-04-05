@@ -70,7 +70,7 @@ char* read_line() {
 
 char** tokenize(char* line) {
 	int size = MAXTOKENS;
-	int pos = 0;
+	int pos = 0, i;
 	char** tokens = malloc(MAXTOKENS * sizeof(char*));
 	char* token;
 	if (!tokens) {
@@ -80,6 +80,13 @@ char** tokenize(char* line) {
 
 	token = strtok(line, " \t\r\n\a");
 	while (token != NULL) {
+		// if tokens is surrounded by quotes, delete them
+		if (token[0] == '\"' && token[strlen(token)-1] == '\"') {	
+			for (i = 0; i < strlen(token) - 1; i++) {
+				token[i] = token[i+1];
+			}
+			token[strlen(token) - 2] = '\0';
+		}
 		tokens[pos] = token;
 		pos++;
 
@@ -111,19 +118,11 @@ int varIndex(char* token) {
 
 // set variable value
 void set(char** tokens) {
-	int i = 0, j;
+	int i = 0;
 	// Check for proper format
 	if ( !tokens[0] || !tokens[1]) {
 		fprintf(stderr, "usage: set <variable> <value>\n");
 		return;
-	}
-
-	// if variable is surrounded by quotes, delete them
-	if (tokens[1][0] == '\"' && tokens[1][strlen(tokens[1]) - 1] == '\"') {
-		for (j = 0; j < strlen(tokens[1]) - 1; j++) {
-			tokens[1][j] = tokens[1][j+1];
-		}
-		tokens[1][strlen(tokens[1]) - 2] = '\0';
 	}
 
 	// Check if token starts with a non-alphabet character
@@ -346,12 +345,10 @@ int main() {
 			// show tokens
 			if (strcmp(usrVarValue[1], "1") == 0) {
 				i = 0;
-				printf("tokens:");
 				while (tokens[i]) {
-					printf(" \'%s\'", tokens[i]);
-					i++;
-				}
-				printf("\n");
+				printf("Token = %s\n", tokens[i]);
+				i++;
+				}	
 			}
 
 			// do

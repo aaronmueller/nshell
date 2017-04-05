@@ -317,28 +317,31 @@ void doCmd(char** tokens, int type) {
 	} // else
 } // doCmd
 
-// variable replacement within quoted token
+// variable replacement within quoted token;
+// essentially replaces a substring (orig) within a string (str) with a new substring (rep)
 char *replace_str(char *str, char *orig, char *rep)
 {
 	static char buffer[MAXTOKENLEN+1];
 	char *p;
 
 	if (!(p = strstr(str, orig)))	// check that 'orig' is in 'str'
-		return str;
+		return str;					// if not, return original string
 
-	char after_orig = str[p-str + strlen(orig)];
+	char after_orig = str[p-str + strlen(orig)];	// check character right after 'orig'
 	if (after_orig != '\0' && after_orig != ' ' && after_orig != '\"' && after_orig != '\'')
 		return str;
 
 	strncpy(buffer, str, p-str);	// copy characters from 'str' start to 'orig'
 	buffer[p-str] = '\0';
 
+	// copy the rest of the new substring 'rep' into buffer;
+	// add the rest of the original string after 'rep'
 	sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
-
+															
 	return buffer;
 }
 
-// variable replacement outside quoted token
+// variable replacement (not inside quoted token)
 void varSub(char* token) {
 	int m;
 	// if first character is '$', prepare token for comparison with shell var names
@@ -398,9 +401,10 @@ int main() {
 		//check for variables and perform substitutions
 		for (j = 1; tokens[j] != NULL; j++) {
 			int k = 0;
+			// if this is a quoted token, handle substitutions with replace_str()
 			if (strchr(tokens[j], ' ')) {
 				char* str = malloc(MAXTOKENLEN+1);
-				while(k < sizeVar) {
+				while(k < sizeVar) {	// check for variables as substrings within token
 					strcpy(str, "$");
 					strcat(str, usrVarName[k]);
 					strcpy(tokens[j], replace_str(tokens[j], str, usrVarValue[k]));
@@ -408,6 +412,7 @@ int main() {
 				}
 
 				free(str);
+			// otherwise, handle using varSub()
 			} else {
 				varSub(tokens[j]);
 			}

@@ -404,14 +404,22 @@ int main() {
 			// if this is a quoted token, handle substitutions with replace_str()
 			if (strchr(tokens[j], ' ')) {
 				char* str = malloc(MAXTOKENLEN+1);
+				char* tokencpy = malloc(MAXTOKENLEN+1);
 				while(k < sizeVar) {	// check for variables as substrings within token
+					strcpy(tokencpy, tokens[j]);
 					strcpy(str, "$");
 					strcat(str, usrVarName[k]);
 					strcpy(tokens[j], replace_str(tokens[j], str, usrVarValue[k]));
-					k++;
+					// if no change, move on to next shell variable check;
+					// necessary b.c. there might be multiple instances of same shell 
+					// variable in a single token
+					if (strcmp(tokencpy, tokens[j]) == 0) {
+						k++;
+					}
 				}
 
 				free(str);
+				free(tokencpy);
 			// otherwise, handle using varSub()
 			} else {
 				varSub(tokens[j]);

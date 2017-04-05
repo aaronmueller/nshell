@@ -68,27 +68,28 @@ char* read_line() {
 	}
 }
 
-// Returns index of token in usrVarName. Returns -1 if not found.
-int varIndex(char* token) {
-	int index;
-	for (index = 0; index < sizeVar; ++index) {
-		if (strcmp(token, usrVarName[index]) == 0)
-			return index;
-	}
-	return -1;
-}
-
-// tokenizes user input. tokens can be a single word or a string
-// surrounded by double quotes. Variable substituion happens at end.
 char** tokenize(char* line) {
 	int size = MAXTOKENS;
-	int pos = 0, c;
+	int pos = 0, i;
 	char** tokens = malloc(MAXTOKENS * sizeof(char*));
-	char *token, *token_start;
-	enum states { BASE, WORD, STRING} state = BASE;
-	
-	// State machine for parsing tokens
-	for(token = line; *token != '\0'; token++) {
+	char* token;
+	if (!tokens) {
+		fprintf(stderr, "nsh: allocation error\n");
+		exit(EXIT_FAILURE);
+	}
+
+	token = strtok(line, " \t\r\n\a");
+	while (token != NULL) {
+		// if tokens is surrounded by quotes, delete them
+		if (token[0] == '\"' && token[strlen(token)-1] == '\"') {	
+			for (i = 0; i < strlen(token) - 1; i++) {
+				token[i] = token[i+1];
+			}
+			token[strlen(token) - 2] = '\0';
+		}
+		tokens[pos] = token;
+		pos++;
+
 		if (pos >= size) {
 			size += MAXTOKENS;
 			tokens = realloc(tokens, size * sizeof(char*));
@@ -97,66 +98,22 @@ char** tokenize(char* line) {
 				exit(EXIT_FAILURE);
 			}
 		}
-		c = (unsigned char) *token;
 
-		// Different states
-		switch (state) {
-			// Base Case (whitespace)
-			case BASE:
-				if (isspace(c)) {
-					continue;
-				}
-				if (c == '"') {
-					state = STRING;
-					token_start = token+1;
-					continue;
-				}
-				state = WORD;
-				token_start = token;
-				continue;
-			// TOKEN has no "
-			case WORD:
-				if (isspace(c)) {
-					*token = 0;
-					tokens[pos++] = token_start;
-					state = BASE;
-				}
-				continue;
-			// TOKEN has "
-			case STRING:	
-				if (c == '"') {
-					*token = 0;
-					tokens[pos++] = token_start;
-					state = BASE;
-				}
-				continue;
-		}
+		token = strtok(NULL, " \t\r\n\a");
 	}
 
-	// Allocate more space if needed
-	if (pos >= size) {
-		size += MAXTOKENS;
-		tokens = realloc(tokens, size * sizeof(char*));
-		if (!tokens) {
-			fprintf(stderr, "nsh: allocation error\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-	// Check for last token
-	if (state != BASE)
-		tokens[pos++] = token_start;
 	tokens[pos] = NULL;
-	pos = 0;
-
-	// Variable Substituion
-	while(tokens[pos])
-	{
-		if((c = varIndex(tokens[pos])) != -1) {
-			strcpy(tokens[pos], usrVarValue[c]);
-		}
-		pos++;
-	}
 	return tokens;
+}
+
+// Returns index of token in usrVarName. Returns -1 if not found.
+int varIndex(char* token) {
+	int index;
+	for (index = 0; index < sizeVar; ++index) {
+		if (strcmp(token, usrVarName[index]) == 0)
+			return index;
+	}
+	return -1;
 }
 
 // set variable value
@@ -215,17 +172,12 @@ void set(char** tokens) {
 	printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
-// Prints a list of set shell variables
 void displayShellVariables(){
 	int index;
 	for (index = 0; index < sizeVar; ++index)
 		printf("%d: %s = %s\n", index, usrVarName[index], usrVarValue[index]);
 }
 
-// Program Command function (do, back, tovar)
-// do: run in foreground
-// back: run in background
-// tovar: store output in variable
 void doCmd(char** tokens, int type) {
 	pid_t pid;
 	char* buf = malloc(MAXLEN);
@@ -275,14 +227,12 @@ void doCmd(char** tokens, int type) {
 			dup2(pipefd[1], 2); //stderr to pipe
 			close(pipefd[1]); //close write
 		}
-		// path starts with '/' (from root)
 		if (tokens[0][0] == '/') {
 			if (execv(tokens[0], tokens)) {
 				perror(tokens[0]);
 				exit(EXIT_FAILURE);
 			}
 		}
-		// path starts with './' (from current dir)
 		else if (tokens[0][0] == '.' && tokens[0][1] == '/') {
 			getcwd(buf, 100);
 			strcat(buf, tokens[0]+1);
@@ -291,7 +241,6 @@ void doCmd(char** tokens, int type) {
 				exit(EXIT_FAILURE);
 			}
 		}
-		// path is $PATH
 		else {
 			int path_worked = 0;
 			char* path;
@@ -311,7 +260,7 @@ void doCmd(char** tokens, int type) {
 
 				path = strtok(NULL, ":");
 			}
-			// cmd not found
+
 			if (!path_worked) {
 				perror(tokens[0]);
 				exit(EXIT_FAILURE);

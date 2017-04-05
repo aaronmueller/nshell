@@ -1,6 +1,22 @@
 # nsh-P4
-CS485G: Shell Project
+CS485G-004: Shell Project
 Authors: Aaron Mueller, Connor VanMeter
+
+# DESCRIPTION
+`nsh` is a project for CS485G-004; it is a shell environment wherein the user may run commands
+(a list of which may be found below). This project was coded in C.
+
+The code works as follows:
+1. The user inputs a line of text. This is read into a C string.
+2. Upon a new line, the line of text is tokenized by spaces or quotes using a state machine.
+	- Connor: description here?
+3. The first token in the token list is used to determine which command to perform (see list below).
+	- `do`, `back`, and `tovar` work using fork() and execv(). See `doCmd()` in `nsh.c`.
+	- `prompt`, `dir`, `procs`, and `pwd` are handled within `main()` in `nsh.c`. See lines 366 - 415.
+	- `done` breaks the main loop upon an `Enter` press. `Ctrl-D` ends `nsh` immediately.
+	- Other commands have their own methods.
+		# See `set()` in `nsh.c` (lines 120 - 173) to see how `set` works.
+		# See `displayShellVariables()` in `nsh.c` (lines 175 - 179) to see how `dshv` works.
 
 # LIST OF FILES
 * nsh.c: contains all code for the shell project
@@ -8,8 +24,9 @@ Authors: Aaron Mueller, Connor VanMeter
 * Makefile: file containing directives used with `make`
 * workingProgram: a well-functioning version of the shell; Rafi's nsh
 * README.txt: contains description of files, project, limitations, and special features
-* testfile.txt: for testing the project. run with 'nsh < testfile.txt'
-* goodoutput.txt: the output of 'workingProgram < testfile.txt'
+* testfile.txt: for testing the project. run with './nsh < testfile.txt'
+* goodoutput.txt: the output of './workingProgram < testfile.txt'
+* output.txt: the output of './nsh < testfile.txt'
 
 # HOW TO RUN/EXIT THIS PROJECT
 1. Use `make` to compile nsh.
@@ -38,12 +55,15 @@ Authors: Aaron Mueller, Connor VanMeter
 * Index 0 is reserved for PATH. Index 1 is reserved for ShowTokens.
 
 # LIMITATIONS/BUGS
-* Built-in Commands ignore additional tokens. The user is not warned.
-* control-D termintes on a blank line or when hit twice in a row.
-* `back` makes the next command print without a proper prompt.
-* Manually set prompts can't contain spaces, when the default prompt does contain spaces.
+* Built-in commands ignore additional tokens. The user is not warned.
+* Control-D terminates on a blank line or when hit twice in a row (workingProgram does this).
+* `back` prints a prompt on a new line, followed by the output of the command on that same line.
+	- The next command is entered on a new line after that, meaning that it is entered after no prompt.
+	- workingProgram does this.
+* Manually-set prompts can't contain spaces, whereas the default prompt does contain spaces (workingProgram does this).
 * The first pair of quotes per token are removed.
 	- "token" -> token
 	- ""token"" -> "token"
 	- "t"oken" -> t"oken
-* procs does not remove finished processes from the display list
+* `procs` does not remove finished processes from the display list, but it does mark them as finished.
+	- The questions page on the course site states that this is acceptable.

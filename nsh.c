@@ -10,17 +10,18 @@
 #define MAXTOKENS 128	// max # of tokens in cmd (flexible)
 #define MAXPROMPT 256	// max length of prompt
 #define MAXTOKENLEN 256	// max length of tokens 
-#define MAXPROCS 2048	// max # of processes
+#define MAXPROCS 2048	// max # of processes (flexible)
 
 int usrVarSize = 10;	// defult size of usr var array (flexible)
-char **usrVarName;
-char **usrVarValue;
-int sizeVar = 0; 	// index of last set variable value
+char **usrVarName;		// shell variable names
+char **usrVarValue;		// shell variable values (indices match w/ usrVarName[])
+int sizeVar = 0;		// index of last set variable value
 int *processes;
-int numProcs;
-int procsSize = MAXPROCS;
-int status;
+int numProcs;			// number of background processes
+int procsSize = MAXPROCS;	// stores the size of the processes array (flexible)
+int status;				// status of background process (running, exited, killed)
 
+// read line, char-by-char, acting appropriately based on every character
 char* read_line() {
 	int pos = 0;
 	int skip = 0;
@@ -57,6 +58,7 @@ char* read_line() {
 		}
 		pos++;
 
+		// if the buffer has exceeded its allocated memory, allocate some more
 		if (pos >= size) {
 			size += MAXLEN;
 			buf = realloc(buf, size * sizeof(char));
@@ -68,7 +70,7 @@ char* read_line() {
 	}
 }
 
-// Returns index of token in usrVarName. Returns -1 if not found.
+// returns index of token in usrVarName. returns -1 if not found.
 int varIndex(char* token) {
 	int index;
 	for (index = 0; index < sizeVar; ++index) {
@@ -78,7 +80,7 @@ int varIndex(char* token) {
 	return -1;
 }
 
-// tokenizes user input. tokens can be a single word or a string
+// Tokenizes user input. Tokens can be a single word or a string
 // surrounded by double quotes. Extra spaces are discounted.
 char** tokenize(char* line) {
 	int size = MAXTOKENS;
@@ -172,7 +174,7 @@ void set(char** tokens) {
 		return;
 	}
 
-	if (tokens[0] )
+	if (tokens[0])
 
 	// Check if more space is needed
 	if (usrVarSize < sizeVar) {
@@ -214,9 +216,9 @@ void displayShellVariables(){
 }
 
 // Program Command function (do, back, tovar)
-// do: run in foreground
-// back: run in background
-// tovar: store output in variable
+// do: run in foreground (type = 0)
+// back: run in background (type = 1)
+// tovar: store output in variable (type = 2)
 void doCmd(char** tokens, int type) {
 	pid_t pid;
 	char* buf = malloc(MAXLEN);
@@ -234,14 +236,15 @@ void doCmd(char** tokens, int type) {
 		}
 	}
 
+	// parent
 	if ((pid = fork())) {
-		// parent
-		if (type != 1) {
+		if (type != 1) {	// if not running in background
 			waitpid(pid, &chld_status, 0);
 		}
-		else {
+		else {				// add background process to list of processes
 			processes[numProcs] = (int) pid;
 			numProcs++;
+			// allocate more space if needed
 			if (numProcs >= procsSize) {
 				procsSize += MAXPROCS;
 				processes = realloc(processes, procsSize * sizeof(int));
@@ -258,8 +261,9 @@ void doCmd(char** tokens, int type) {
 			set(tokenize(buf));
 			free(buf);
 		}
+
+	// child
 	} else {
-		// child
 		if (type == 2) {
 			close(pipefd[0]); //close unused read
 			dup2(pipefd[1], 1); //stdout to pipe
@@ -313,6 +317,53 @@ void doCmd(char** tokens, int type) {
 	} // else
 } // doCmd
 
+// variable replacement within quoted token
+char *replace_str(char *str, char *orig, char *rep)
+{
+	static char buffer[MAXTOKENLEN+1];
+	char *p;
+
+	if (!(p = strstr(str, orig)))	// check that 'orig' is in 'str'
+		return str;
+
+	char after_orig = str[p-str + strlen(orig)];
+	if (after_orig != '\0' && after_orig != ' ' && after_orig != '\"' && after_orig != '\'')
+		return str;
+
+	strncpy(buffer, str, p-str);	// copy characters from 'str' start to 'orig'
+	buffer[p-str] = '\0';
+
+	sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+
+	return buffer;
+}
+
+// variable replacement outside quoted token
+void varSub(char* token) {
+	int m;
+	// if first character is '$', prepare token for comparison with shell var names
+	if (token[0] == '$' && token[1] != '\0') {
+		char* str = malloc(MAXTOKENLEN+1);	// comparison string
+		strcpy(str, token+1);
+		char* to_cat = malloc(MAXTOKENLEN+1);	// to be concatenated to string after
+												// comparisons are complete
+		// deal with quotes by adding them to `to_cat` and deleting them from `str`
+		while (str[strlen(str) - 1] == '\"' || str[strlen(str) - 1] == '\'') {
+			strcat(to_cat, str+(strlen(str) - 1));
+			str[strlen(str) - 1] = '\0';
+		}
+		// compare `str` with all values in usrVarName[] until match is found
+		for (m = 0; m < sizeVar; m++) {
+			if (strcmp(str, usrVarName[m]) == 0) {
+				strcpy(token, usrVarValue[m]);		// replace
+				strcat(token, to_cat);				// concatenate final quotes
+			}
+		}
+		free(str);
+		free(to_cat);
+	}
+}
+
 int main() {
 	char* user_prompt = malloc(MAXPROMPT);
  	usrVarName = malloc(usrVarSize * MAXTOKENLEN);
@@ -320,7 +371,7 @@ int main() {
 	strncpy(user_prompt, "nsh > ", MAXPROMPT);
 	char* line;
 	char** tokens;	
-	int i, j, m;
+	int i, j;
 	processes = malloc(procsSize * sizeof(int));
 
 	// allocate usr variables
@@ -346,37 +397,30 @@ int main() {
 		
 		//check for variables and perform substitutions
 		for (j = 1; tokens[j] != NULL; j++) {
-			// increment until first non-quote character
 			int k = 0;
-			while (tokens[j][k] == '\'' || tokens[j][k] == '\"') {
-				k++;
-			}
-			if (tokens[j][k] == '$' && tokens[j][k+1] != '\0') {
+			if (strchr(tokens[j], ' ')) {
 				char* str = malloc(MAXTOKENLEN+1);
-				strcpy(str, tokens[j]+(k+1));
-				char* to_cat = malloc(MAXTOKENLEN+1);
-				while (str[strlen(str) - 1] == '\"' || str[strlen(str) - 1] == '\'') {
-					strcat(to_cat, str+(strlen(str) - 1));
-					str[strlen(str) - 1] = '\0';
+				while(k < sizeVar) {
+					strcpy(str, "$");
+					strcat(str, usrVarName[k]);
+					strcpy(tokens[j], replace_str(tokens[j], str, usrVarValue[k]));
+					k++;
 				}
-				for (m = 0; m < sizeVar; m++) {
-					if (strcmp(str, usrVarName[m]) == 0) {
-						strcpy(tokens[j]+k, usrVarValue[m]);
-						strcat(tokens[j], to_cat);
-					}
-				}
+
 				free(str);
-				free(to_cat);
+			} else {
+				varSub(tokens[j]);
 			}
 		}
 
 		// handle commands
 		if (*tokens) {
+			// done
 			if (strcmp(tokens[0], "done") == 0) {
 				break;
 			}
 			
-			// show tokens
+			// show tokens if ShowTokens == 1
 			if (strcmp(usrVarValue[1], "1") == 0) {
 				i = 0;
 				while (tokens[i]) {
@@ -417,7 +461,7 @@ int main() {
 					}
 					strncpy(user_prompt, tokens[1], MAXPROMPT);
 				}
-			} // if
+			}
 
 			// dir
 			else if (strcmp(tokens[0], "dir") == 0) {
@@ -461,6 +505,7 @@ int main() {
 				displayShellVariables();
 			}
 	
+			// command not recognized
 			else {
 				fprintf(stderr, "invalid command: %s\n", tokens[0]);
 			}
@@ -473,5 +518,8 @@ int main() {
 		
 	} // while
 
+	free(usrVarName);
+	free(usrVarValue);
+	free(processes);
 	return 0;
 } //main

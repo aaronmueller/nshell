@@ -42,3 +42,8 @@ Authors: Aaron Mueller, Connor VanMeter
 * control-D termintes on a blank line or when hit twice in a row.
 * `back` makes the next command print without a proper prompt.
 * Manually set prompts can't contain spaces, when the default prompt does contain spaces.
+* The first pair of quotes per token are removed.
+	- "token" -> token
+	- ""token"" -> "token"
+	- "t"oken" -> t"oken
+* procs does not remove finished processes from the display list

@@ -63,7 +63,7 @@ The code works as follows:
 	- The next command is entered on a new line after that, meaning that it is entered after no prompt.
 	- workingProgram does this.
 * Manually-set prompts can't contain spaces, whereas the default prompt does contain spaces (workingProgram does this).
-* The state machine has interesting token behavior
+* The state machine has interesting token behavior. " cannot be escaped (\").
 	- "token" -> token
 	- ""token"" ->  token""
 	- "t"oken" -> t oken"

@@ -108,7 +108,7 @@ char** tokenize(char* line) {
 				}
 				if (c == '"') {
 					state = STRING;
-					token_start = token;
+					token_start = token+1;
 					continue;
 				}
 				state = WORD;
@@ -127,7 +127,7 @@ char** tokenize(char* line) {
 			case STRING:	
 				if (c == '"') {
 					*token = 0;
-					tokens[pos++] = token_start+1;
+					tokens[pos++] = token_start;
 					state = BASE;
 				}
 				continue;

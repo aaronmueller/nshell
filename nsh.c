@@ -116,7 +116,6 @@ char** tokenize(char* line) {
 				continue;
 			// TOKEN has no "
 			case WORD:
-				// reach blank space
 				if (isspace(c)) {
 					*token = 0;
 					tokens[pos++] = token_start;
